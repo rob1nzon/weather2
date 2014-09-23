@@ -14,32 +14,47 @@ import shutil
 from StringIO import StringIO
 
 def unk(str):
+    #return str[str.find("'"):str.rfind("']")]
     return str[2:str.rfind("']")]
 
 
-def expnd(base):
+def expnd(base, wm):
     i = [0, 1, 2, 3, 4, 5, 7, 10, 22, 23, 26]
-    for a in i:
-        # if (a==10):
-        #     print re.findall('(\d+)', unk(base[0][a]))
-        # else:
-        print unk(base[0][a])
+    for l in range(len(base)):
+        for a in i:
+            print unk(base[l][a])
     srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     for x in base:
-        g=range(len(srx))
-        del g[0]
+        print x
+        g=range(len(srx)+1)
+        del g[0]  # костыли дата
+        #del g[5]  # облачка
+        #del g[-2] # еще
         for j in g:
-            srx[j]=srx[j]+int(unk(x[j]))
+            if (unk(x[j])!=''):
+                if (unk(x[j])!=' '):
+                    if (j==5) or (j==6) or (j==10) or (j==11):
+                        try:
+                            srx[j]=srx[j]+float(re.findall('(\d+)', x[j])[0]) #костыль
+                        except:
+                            print ':('
+                    else:
+                        srx[j]=srx[j]+float(unk(x[j])) # складываем
     for j in g:
-        srx[j] = round(srx[j]/len(srx))
+        try:
+            srx[j] = round(srx[j]/len(base)) # среднее значение
+        except:
+            print ':('
 
-    add_to_db(srx[0], srx[1], srx[2], srx[3], srx[4], srx[5])
+    srx[0] = unk(base[0][0])[:-6]
+
+    add_to_db(wm, srx[0], srx[1], srx[2], srx[3], srx[4], srx[5], srx[6], srx[7], srx[8], srx[9], srx[10])
 
 
-def add_to_db(date, temp, pa, pa2, pd, vl):
-    sql = """INSERT INTO weather(data,temp,pa,pa2,pd,vl)
-        VALUES ('%(d)s', '%(t)s','%(p)s','%(p2)s','%(pd)s','%(vl)s')
-        """ % {"d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl}
+def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
+    sql = """INSERT INTO weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
+        VALUES ('%(w)s', '%(d)s', '%(t)s','%(p)s','%(p2)s','%(pd)s','%(vl)s','%(Ff)s','%(N)s','%(Td)s','%(RRR)s','%(Tg)s')
+        """ % {"w": wm, "d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl, "Ff":ff, "N":n, "Td":td, "RRR":rrr,"Tg":tg}
     print sql
     cursor.execute(sql)
 
@@ -111,7 +126,7 @@ def load_data(wmid):
         #self.ui.plainTextEdit.appendPlainText(_fromUtf8(data))
         cdata = csv.reader(data)
         n = 0
-        #TODO Доделать нормальный парсер
+
         a = []
         b = []
         y=0
@@ -128,57 +143,7 @@ def load_data(wmid):
             if (y==1):
                 if (s.rfind(';')<0):
                     a.append(s)
-        expnd(b)
-        #print b[0][0]
-        #print b
-        #
-        # for r in cdata: #кривой парсер
-        #    s=str(r)
-        #    #print s
-        #    if (n==10):
-        #        vl=s
-        #        #print data,temp,pa,pa2,pd,vl
-        #        print(data[2:len(data)-2]+"  "
-        #              +temp[2:len(temp)-2]+"  "
-        #              +pa[2:len(pa)-2]+"  "+pa2[2:len(pa2)-2]+"  "+pd[2:len(pd)-2]+"  "+vl[2:len(vl)-2])
-        #        add_to_db(data[2:len(data)-2],
-        #                  temp[2:len(temp)-2],
-        #                  pa[2:len(pa)-2],
-        #                  pa2[2:len(pa2)-2],
-        #                  pd[2:len(pd)-2],
-        #                  vl[2:len(vl)-2])
-        #        #print str(len(s))
-        #
-        #        n=0
-        #    if (n==9):
-        #        n=10
-        #    if (n==8):
-        #        pd=s
-        #        n=9
-        #    if (n==7):
-        #        n=8
-        #    if (n==6):
-        #        pa2=s
-        #        n=7
-        #    if (n==5):
-        #        n=6
-        #    if (n==4):
-        #        pa=s
-        #        n=5
-        #    if (n==3):
-        #        n=4
-        #    if (n==2):
-        #        temp=s
-        #        n=3
-        #    if (n==1):
-        #        n=2
-        #
-        #    if (s.find(':')>0 and len(s)>5):
-        #        data=s
-        #        n=1
-        # request = urllib2.Request(s[a:b])
-
-
+        expnd(b,wmid)
 
 def download(url):
     try:
