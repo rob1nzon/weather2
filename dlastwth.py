@@ -19,13 +19,13 @@ def unk(str):
 
 
 def expnd(base, wm):
-    i = [0, 1, 2, 3, 4, 5, 7, 10, 22, 23, 26]
-    for l in range(len(base)):
-        for a in i:
-            print unk(base[l][a])
+    #i = [0, 1, 2, 3, 4, 5, 7, 10, 22, 23, 26]
+    # for l in range(len(base)):
+    #     for a in i:
+    #         print unk(base[l][a])
     srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     for x in base:
-        print x
+        #print x
         g=range(len(srx)+1)
         del g[0]  # костыли дата
         #del g[5]  # облачка
@@ -33,18 +33,22 @@ def expnd(base, wm):
         for j in g:
             if (unk(x[j])!=''):
                 if (unk(x[j])!=' '):
-                    if (j==5) or (j==6) or (j==10) or (j==11):
+                    if (j==5) or (j==6) or (j==10):
                         try:
                             srx[j]=srx[j]+float(re.findall('(\d+)', x[j])[0]) #костыль
                         except:
-                            print ':('
+                            print x
+                            print j,x[j]
+                            print 'Problem with format :('
                     else:
                         srx[j]=srx[j]+float(unk(x[j])) # складываем
-    for j in g:
+    for j in g[:-1]:
         try:
-            srx[j] = round(srx[j]/len(base)) # среднее значение
+            if (srx[j]!=' '):
+                srx[j] = round(srx[j]/len(base)) # среднее значение
         except:
-            print ':('
+            print j
+            print 'Problem with round :('
 
     srx[0] = unk(base[0][0])[:-6]
 
