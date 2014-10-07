@@ -31,11 +31,11 @@ try:
 except AttributeError:
     def _toUtf8(s):
         return s
-id=''
+id = ''
 cityurl={}
 class Weather(QtGui.QMainWindow):
     
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         super(Weather, self).__init__(parent)
         self.prevCmd = ''
         self.counter = 0
