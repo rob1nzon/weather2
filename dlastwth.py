@@ -7,13 +7,14 @@ import datetime
 import MySQLdb
 import gzip
 import re
+import psycopg2
 
 from StringIO import StringIO
 
 
 def get_last_date_bd():
-    sql = '''SELECT `data` FROM `weather`
-        ORDER BY `weather`.`data`  DESC
+    sql = '''SELECT data FROM agz_.weather
+        ORDER BY weather.data  DESC
         LIMIT 1'''
     cursor.execute(sql)
     results = cursor.fetchall()
@@ -71,8 +72,8 @@ def expnda(base, wm):
 
 
 def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
-    sql = """INSERT INTO weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
-        VALUES ('%(w)s', '%(d)s', '%(t)s','%(p)s','%(p2)s','%(pd)s','%(vl)s','%(Ff)s','%(N)s','%(Td)s','%(RRR)s','%(Tg)s')
+    sql = """INSERT INTO agz_.weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
+        VALUES ('%(w)s', '%(d)s', %(t)s,%(p)s,%(p2)s,%(pd)s,%(vl)s,%(Ff)s,%(N)s,%(Td)s,%(RRR)s,%(Tg)s)
         """ % {"w": wm, "d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl, "Ff": ff, "N": n, "Td": td,
                "RRR": rrr, "Tg": tg}
     print sql
@@ -170,7 +171,17 @@ old = ''
 logging.basicConfig(filename='testcsv.log', level=logging.DEBUG)
 ##
 
-db = MySQLdb.connect(host="127.0.0.1", user="root", passwd="", db="weather", charset='utf8')
+#db = MySQLdb.connect(host="127.0.0.1", user="root", passwd="", db="weather", charset='utf8')
+
+
+try:
+     db = psycopg2.connect("""dbname='postgis_21_sample'
+                             user='postgres'
+                             host='127.0.0.1'
+                             password='root'""")
+except:
+    print "I am unable to connect to the database"
+
 cursor = db.cursor()
 filename = 'C:\Users\USER\unic1.csv'
 count = 1
@@ -183,7 +194,8 @@ if (len(m1)==1): m1='0'+m1
 d1 = str(old_date.day)
 if (len(d1)==1): d1='0'+d1
 y1 = str(old_date.year)
-old_d =  d1 + '.' + m1 + '.' + y1
+old_d =  y1 + '-' + m1 + '-' + d1
+print get_last_date_bd()
 if (get_last_date_bd() != old_d):
     try:
         with open(filename, 'rb') as f:
