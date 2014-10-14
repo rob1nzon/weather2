@@ -26,6 +26,7 @@ def unk(str):
 def expnda(base, wm):
     def plus(x, s):
         #print x, s
+
         if (s != ''):
             if (srx[x] != 'NULL'):
                 if (srx[x] == 0):
@@ -40,7 +41,7 @@ def expnda(base, wm):
 
     global srx
     srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
+    print base.splitlines(1)[6].split(';')[22]
     dtch=base.splitlines(1)[7:][0].split(';')[0][1:-7]
     #print dtch
 
@@ -53,43 +54,49 @@ def expnda(base, wm):
               srx[5], srx[6], srx[7], srx[8], srx[9])
             srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             dtch = tarr[0][1:-7]
-        #print tarr[1], tarr[2], tarr[3], tarr[4], tarr[5], tarr[7], tarr[22], tarr[23], tarr[26]
         #ToDO Написать комментарии по каждому пункту
         try:
-            plus(0, tarr[1][1:-1])
+            plus(0, tarr[1][1:-1]) # t температура
         except:
             print '1', tarr[1]
         try:
-            plus(1, tarr[2][1:-1])
+            plus(1, tarr[2][1:-1]) # pa атмосферное давление
         except:
             print '2', tarr[2]
         try:
-            plus(2, tarr[3][1:-1])
+            plus(2, tarr[3][1:-1]) # pa2 атмосферное давление на уровне моря
         except:
             print '3', tarr[3]
         try:
-            plus(3, tarr[4][1:-1])
+            plus(3, tarr[4][1:-1]) # pd разница давлений
         except:
             print '4', tarr[4]
         try:
-            plus(4, tarr[5][1:-1])
+            plus(4, tarr[5][1:-1]) # vl Относительная влажность
         except:
             print '5', tarr[5]
         try:
-            plus(5, tarr[7][1:-1])
+            plus(5, tarr[7][1:-1]) # ff  Скорость ветра
         except:
             print '7', tarr[7]
         try:
-            plus(7, tarr[22][1:-1])
+            plus(6, re.findall('(\d+)', tarr[10][1:-1])[0]) # n Облачность
+            #print '6', tarr[10]
+        except:
+            print '6', tarr[10]
+            plus(6, '')
+        try:
+            plus(7, tarr[22][1:-1]) # Скорость ветра
+            #print '22', tarr[22]
         except:
             #print '22', tarr[22]
             plus(7, '')
         try:
-            plus(8, re.findall('(\d+.\d+)', tarr[23][1:-1])[0])
+            srx[8] += re.findall('(\d+.\d+)', tarr[23][1:-1])[0] # RRR Точка росы
         except:
-            plus(8, '')
+            srx[8] += 0
         try:
-            plus(9, tarr[26][1:-1])
+            plus(9, tarr[26][1:-1]) # Tg температура поверхности
         except:
             plus(9, '')
 
@@ -167,17 +174,14 @@ def load_data(wmid, gdate):
         tdata = data.decode('utf8')
         expnda(tdata, wmid)
 
-old = ''
-
 logging.basicConfig(filename='testcsv.log', level=logging.ERROR)
-
 try:
      db = psycopg2.connect("""dbname='postgis_21_sample'
                              user='postgres'
                              host='127.0.0.1'
                              password='root'""")
 except:
-    print "I am unable to connect to the database"
+    print "Ошибка соединения с базой данных"
 
 cursor = db.cursor()
 filename = 'C:\Users\USER\unic1.csv'
@@ -194,25 +198,23 @@ y1 = str(old_date.year)
 old_d =  y1 + '-' + m1 + '-' + d1
 
 try:
-    date_bd = get_last_date_bd()
+    date_bd = str(get_last_date_bd())
 except:
     print 'Записей в базе не обнаружено'
     date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')
-    print date_bd
 
 if (str(date_bd) != old_d):
     try:
-        with open(filename, 'rb') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if (old != row[1]):
-                    #print row[0], row[1]
-                    count = count + 1
-                    load_data(row[1], date_bd)
-                    old = row[1]
+        sqlid="""SELECT DISTINCT ON (id) id
+                 FROM agz_.mstations
+                 WHERE state LIKE 'Ярос%'""" # Только Ярославская область
+        cursor.execute(sqlid)
+        results = cursor.fetchall()
+
+        for row in results:
+            load_data(row[0], date_bd)
     except:
-        print 'Ошибка обработки файла'
-    print str(count)
+        print 'Ошибка...'
 else:
     print 'База данных актуальна...'
 db.commit()
