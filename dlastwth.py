@@ -144,7 +144,7 @@ def load_data(wmid, gdate):
         'wmo_id': str(wmid)
     }
     url = 'http://rp5.ru/inc/f_archive.php'
-    #print wmid
+    print wmid
     try:
         r = requests.post(url, data)
     except ValueError:

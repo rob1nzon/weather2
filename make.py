@@ -1,6 +1,27 @@
-list_date = ['2009-01-01',  '2009-04-01',  '2009-05-01',  '2009-06-01',  '2009-07-01',  '2009-08-01',  '2009-09-01',  '2009-10-01',  '2010-01-01',  '2010-04-01',  '2010-05-01',  '2010-06-01',  '2010-07-01',  '2010-08-01',  '2010-09-01',  '2010-10-01',  '2011-01-01',  '2011-04-01',  '2011-05-01',  '2011-06-01',  '2011-07-01',  '2011-08-01',  '2011-09-01',  '2011-10-01',  '2012-01-01',  '2012-04-01',  '2012-05-01',  '2012-06-01',  '2012-07-01',  '2012-08-01',  '2012-09-01',  '2012-10-01',  '2013-01-01',  '2013-04-01',  '2013-05-01',  '2013-06-01',  '2013-07-01',  '2013-08-01',  '2013-09-01',  '2013-10-01',  '2014-01-01',  '2014-04-01',  '2014-05-01',  '2014-06-01',  '2014-07-01',  '2014-08-01',  '2014-09-01',  '2014-10-01']
+# -*- coding: utf-8 -*-
+import psycopg2
 
+try:
+    conn2 = psycopg2.connect("""dbname='postgis_21_sample'
+                            user='postgres'
+                            host='127.0.0.1'
+                            password='root'""")
+except:
+    print "I am unable to connect to the local database"
 
-for i in xrange(len(list_date)-1):
-    q = """(SELECT * FROM agz_.s WHERE date_ >= '%(fd)s' AND date_ < '%(sd)s')""" % {'fd':list_date[i],'sd':list_date[i+1]}
+cur2 = conn2.cursor()
+
+f=open('temp2.data', 'r')
+for a in f:
+    row = a.split('#')
+    sql = """ INSERT INTO agz_.term2(
+            id_term, tmin_, fn_, tmax_, area_, harea_, outline_, center_,
+            fname_, sname_, rname_, forest_, date_, day_)
+    VALUES ( """
+    for b in row:
+        sql=sql+"'"+b+"',"
+    sql=sql[:-1]+');'
+    print sql
+    cur2.execute(sql)
+conn2.commit()
 
