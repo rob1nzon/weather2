@@ -200,24 +200,24 @@ class Weather(QtGui.QMainWindow):
         request = urllib2.Request(s[a:b])
         request.add_header('Accept-encoding', 'gzip')
         response = urllib2.urlopen(request)
-        buf = StringIO( response.read())
+        buf = StringIO(response.read())
         f = gzip.GzipFile(fileobj=buf)
         data = f.read()
         #self.ui.plainTextEdit.appendPlainText(_fromUtf8(data))
-        cdata= csv.reader(data)
+        cdata = csv.reader(data)
 
         n=0
         for r in cdata:
-            s=str(r)
-            if (n==2):
-                temp=s
+            s = str(r)
+            if (n == 2):
+                temp = s
                 self.ui.plainTextEdit.appendPlainText(_fromUtf8(data+"  "+temp))
-                n=0
-            if (n==1):
-                n=2
+                n = 0
+            if (n == 1):
+                n = 2
             if (s.find(':')>0 and len(s)>2):
                 data=s
-                n=1
+                n = 1
 
 
 class Ui_Weather(object):
