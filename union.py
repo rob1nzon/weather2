@@ -12,13 +12,13 @@ except:
 
 cur = conn.cursor()
 sql = """ SELECT id_gar, tmin_, tmax_, area_, outline_, center_, fname_, sname_,
-       rname_, forest_, date_, day_
+       rname_, forest_, day_
   FROM agz_.gar WHERE sname_ LIKE 'Ярос%'"""
 cur.execute(sql)
 results1 = cur.fetchall()
 #print results1[0][5]
 for term in results1:
-    sql3 = """SELECT wmid, data, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg,
+    sql3 = """SELECT wmid, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg,
       (SELECT ST_Distance_Sphere(loc,'%(p)s'::geometry) FROM agz_.mstations
       ORDER BY loc <-> '%(p)s'::geometry LIMIT 1)
       FROM agz_.weather WHERE (wmid = (SELECT id FROM agz_.mstations
@@ -33,17 +33,17 @@ for term in results1:
 
     icql = """INSERT INTO agz_."union"(
             id_gar, tmin_, tmax_, area_, fname_, sname_,
-            rname_, forest_, date_, day_, wmid, data, temp, pa, pa2, pd,
-            vl, ff, n, td, rrr, tg, dist, harea_)
-    VALUES ("""
+            rname_, forest_, day_, wmid, temp, pa, pa2, pd,
+            vl, ff, n, td, rrr, tg, dist, harea_, termharea_, countterm)
+    SELECT """
     try:
         i = 0
         for b in term:
             i += 1
             if (i != 5) and (i != 6): # выпиливаю координаты
-                icql=icql+"'"+str(b)+"',"
+                icql = icql+"'"+str(b)+"',"
         for b in results3[0]: icql=icql+"'"+str(b)+"',"
-        icql = icql + '(SELECT AVG(harea_) FROM agz_.term WHERE fn_=%(f)s));' % {'f':term[0]}
+        icql = icql + ' AVG(harea_),AVG(area_),COUNT(area_) FROM agz_.term WHERE fn_=%(f)s;' % {'f':term[0]}
         cur.execute(icql.replace("'None'", 'NULL'))
         print icql.replace("'None'", 'NULL')
     except:
