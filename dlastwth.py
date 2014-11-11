@@ -198,7 +198,7 @@ y1 = str(old_date.year)
 old_d =  y1 + '-' + m1 + '-' + d1
 
 try:
-    date_bd = str(get_last_date_bd())
+    date_bd = '2010-04-01'#str(get_last_date_bd())
 except:
     print 'Записей в базе не обнаружено'
     date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')

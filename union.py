@@ -18,25 +18,34 @@ cur.execute(sql)
 results1 = cur.fetchall()
 #print results1[0][5]
 for term in results1:
-    sql3 = """SELECT wmid, data, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg
+    sql3 = """SELECT wmid, data, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg,
+      (SELECT ST_Distance_Sphere(loc,'%(p)s'::geometry) FROM agz_.mstations
+      ORDER BY loc <-> '%(p)s'::geometry LIMIT 1)
       FROM agz_.weather WHERE (wmid = (SELECT id FROM agz_.mstations
       ORDER BY loc <-> '%(p)s'::geometry
       LIMIT 1)) AND (data::text LIKE '%(d)s'); """ % {'p': term[5], 'd': str(term[2])[:10]}
     #print sql3
     cur.execute(sql3)
     results3 = cur.fetchall()
-    #print term, results3
+    if (len(results3)<1):
+        print 'NO WEATHER DATA'
+        print sql3
 
     icql = """INSERT INTO agz_."union"(
-            id_gar, tmin_, tmax_, area_, outline_, center_, fname_, sname_,
+            id_gar, tmin_, tmax_, area_, fname_, sname_,
             rname_, forest_, date_, day_, wmid, data, temp, pa, pa2, pd,
-            vl, ff, n, td, rrr, tg)
+            vl, ff, n, td, rrr, tg, dist, harea_)
     VALUES ("""
     try:
-        for b in term: icql=icql+"'"+str(b)+"',"
+        i = 0
+        for b in term:
+            i += 1
+            if (i != 5) and (i != 6): # выпиливаю координаты
+                icql=icql+"'"+str(b)+"',"
         for b in results3[0]: icql=icql+"'"+str(b)+"',"
-        icql = icql[:-1]+');'
+        icql = icql + '(SELECT AVG(harea_) FROM agz_.term WHERE fn_=%(f)s));' % {'f':term[0]}
         cur.execute(icql.replace("'None'", 'NULL'))
+        print icql.replace("'None'", 'NULL')
     except:
         print 'Error'
         print icql
