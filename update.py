@@ -30,10 +30,10 @@ old_d = results[0][0]
 print old_d
 
 print "Get last date in NCUKS base"
-sql = """ SELECT date_::text FROM agz_.s ORDER BY date_ DESC LIMIT 1; """
-#cur.execute(sql)
-#results = cur.fetchall()
-now_d = '2014-10-07'#results[0][0]
+sql = """ SELECT date_::text FROM agz_.s WHERE date_ > '%(d)s' ORDER BY date_ DESC LIMIT 1; """ % {'d':old_d}
+cur.execute(sql)
+results = cur.fetchall()
+now_d = results[0][0]
 print now_d
 
 # now_date = datetime.date.today()-datetime.timedelta(days=1)
@@ -67,7 +67,7 @@ if old_d != now_d:
         for b in row:
             sql=sql+"'"+b+"',"
         sql = sql[:-1]+');'
-        print sql
+        #print sql
         try:
             cur2.execute(sql.replace("'\N'", 'NULL'))
             print '*',

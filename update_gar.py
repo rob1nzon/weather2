@@ -29,7 +29,7 @@ old_d = results[0][0]
 print old_d
 
 print "Get last date in NCUKS base"
-sql = """ SELECT date_::text FROM agz_.f ORDER BY date_ DESC LIMIT 1; """
+sql = """ SELECT date_::text FROM agz_.f WHERE date_ > '%(d)s' ORDER BY date_ DESC LIMIT 1; """ % {'d':old_d}
 cur.execute(sql)
 results = cur.fetchall()
 now_d = results[0][0]
@@ -42,6 +42,7 @@ print now_d
 # if (len(d1)==1): d1='0'+d1
 # y1 = str(now_date.year)
 # now_d =  y1 + '-' + m1 + '-' + d1
+
 if old_d != now_d:
     print "Update data: %(a)s - %(b)s" % {'a': old_d, 'b': now_d}
     sql = """(SELECT fn_, tmin_, tmax_, area_, outline_, center_, fname_, sname_, rname_, forest_, date_, day_
@@ -51,11 +52,11 @@ if old_d != now_d:
     results1 = cur.fetchall()
     data = StringIO.StringIO()
 
-    f=open('temp3.data', 'w')
+    f = open('temp3.data', 'w')
     cur.copy_to(f, sql, sep="#")
     f.close()
 
-    f=open('temp3.data', 'r')
+    f = open('temp3.data', 'r')
     #cur.copy_to(f, sql, sep="#")
     for a in f:
         row = a.split('#')

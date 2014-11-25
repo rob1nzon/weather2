@@ -41,7 +41,7 @@ def expnda(base, wm):
 
     global srx
     srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    print base.splitlines(1)[6].split(';')[22]
+    #print base.splitlines(1)[6].split(';')[22]
     dtch=base.splitlines(1)[7:][0].split(';')[0][1:-7]
     #print dtch
 
@@ -54,7 +54,6 @@ def expnda(base, wm):
               srx[5], srx[6], srx[7], srx[8], srx[9])
             srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             dtch = tarr[0][1:-7]
-        #ToDO Написать комментарии по каждому пункту
         try:
             plus(0, tarr[1][1:-1]) # t температура
         except:
@@ -83,7 +82,7 @@ def expnda(base, wm):
             plus(6, re.findall('(\d+)', tarr[10][1:-1])[0]) # n Облачность
             #print '6', tarr[10]
         except:
-            print '6', tarr[10]
+            #print '6', tarr[10]
             plus(6, '')
         try:
             plus(7, tarr[22][1:-1]) # Скорость ветра
