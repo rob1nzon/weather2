@@ -60,7 +60,7 @@ if old_d != now_d:
     #cur.copy_to(f, sql, sep="#")
     for a in f:
         row = a.split('#')
-        sql = """ INSERT INTO agz_.term2(
+        sql = """ INSERT INTO agz_.term(
                 id_term, tmin_, fn_, tmax_, area_, harea_, outline_, center_,
                 fname_, sname_, rname_, forest_, date_, day_)
         VALUES ( """

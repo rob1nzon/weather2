@@ -51,14 +51,7 @@ for row in results1:
 
         wsql = '''
 
-
         '''
-
-
-
-
-
-
 
         #list[0][0], list[0][1]
         isql = ''' INSERT INTO agz_."temp_union"(
