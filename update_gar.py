@@ -2,82 +2,70 @@
 import psycopg2
 import datetime
 import StringIO
+from psql import datebase_connect
 
-try:
-    conn = psycopg2.connect("""dbname='agz'
-                            user='agz'
-                            host='10.115.127.11'
-                            password='zagaz'""")
-except:
-    print "I am unable to connect to the database NCUKS"
+def connect():
+    s2, conn2, cur2 = datebase_connect('localhost')
+    s, conn, cur = datebase_connect('ncuks')
+    return s2, conn2, cur2, s, conn, cur
 
-try:
-    conn2 = psycopg2.connect("""dbname='postgis_21_sample'
-                            user='postgres'
-                            host='127.0.0.1'
-                            password='root'""")
-except:
-    print "I am unable to connect to the local database"
-
-cur = conn.cursor()
-cur2 = conn2.cursor()
-print "Get last date in local base"
-sql = """ SELECT date_::text FROM agz_.gar ORDER BY date_ DESC LIMIT 1; """
-cur2.execute(sql)
-results = cur2.fetchall()
-old_d = results[0][0]
-print old_d
-
-print "Get last date in NCUKS base"
-sql = """ SELECT date_::text FROM agz_.f WHERE date_ > '%(d)s' ORDER BY date_ DESC LIMIT 1; """ % {'d':old_d}
-cur.execute(sql)
-results = cur.fetchall()
-now_d = results[0][0]
-print now_d
-
-# now_date = datetime.date.today()-datetime.timedelta(days=1)
-# m1 = str(now_date.month)
-# if (len(m1)==1): m1='0'+m1
-# d1 = str(now_date.day)
-# if (len(d1)==1): d1='0'+d1
-# y1 = str(now_date.year)
-# now_d =  y1 + '-' + m1 + '-' + d1
-
-if old_d != now_d:
-    print "Update data: %(a)s - %(b)s" % {'a': old_d, 'b': now_d}
-    sql = """(SELECT fn_, tmin_, tmax_, area_, outline_, center_, fname_, sname_, rname_, forest_, date_, day_
-    FROM agz_.f WHERE date_ >= '%(o)s')""" % {'o': old_d}
-    print sql
-    cur.execute(sql)
-    results1 = cur.fetchall()
-    data = StringIO.StringIO()
-
-    f = open('temp3.data', 'w')
-    cur.copy_to(f, sql, sep="#")
-    f.close()
-
-    f = open('temp3.data', 'r')
-    #cur.copy_to(f, sql, sep="#")
-    for a in f:
-        row = a.split('#')
-        sql = """ INSERT INTO agz_.gar(
-            id_gar, tmin_, tmax_, area_, outline_, center_, fname_, sname_,
-            rname_, forest_, date_, day_)
-        VALUES ( """
-        for b in row:
-            sql=sql+"'"+b+"',"
-        sql = sql[:-1]+');'
-        #print sql
+def get_last_date(s, s2, cur, cur2):
+    if [s, s2] == [True, True]:
+        print "Get last date in local base"
+        sql = """ SELECT date_::text FROM agz_.gar ORDER BY date_ DESC LIMIT 1; """
+        cur2.execute(sql)
+        old_d = cur2.fetchone()[0]
+        print old_d
+        print "Get last date in NCUKS base"
+        sql = """ SELECT date_::text FROM agz_.f WHERE date_ > '%(d)s' ORDER BY date_ DESC LIMIT 1; """ % {'d': old_d}
+        cur.execute(sql)
         try:
-            cur2.execute(sql.replace("'\N'", 'NULL'))
+            now_d = cur.fetchone()[0]
         except:
-            print 'Error'
-            print sql
-        print '*',
-        conn2.commit()
-else:
-    print "Allright"
+            now_d = old_d
+        print now_d
+        return now_d, old_d
 
+def update_gar():
+        s2, conn2, cur2, s, conn, cur = connect()
+        now_d, old_d = get_last_date(s, s2, cur, cur2)
+        # now_date = datetime.date.today()-datetime.timedelta(days=1)
+        # m1 = str(now_date.month)
+        if old_d != now_d:
+            print "Update data: %(a)s - %(b)s" % {'a': old_d, 'b': now_d}
+            sql = """(SELECT fn_, tmin_, tmax_, area_, outline_, center_, fname_, sname_, rname_, forest_, date_, day_
+            FROM agz_.f WHERE date_ >= '%(o)s')""" % {'o': old_d}
+            print sql
+            cur.execute(sql)
+            data = StringIO.StringIO()
+
+            f = open('temp3.data', 'w')
+            cur.copy_to(f, sql, sep="#")
+            f.close()
+            f = open('temp3.data', 'r')
+            for a in f:
+                row = a.split('#')
+                sql = """ INSERT INTO agz_.gar(
+                id_gar, tmin_, tmax_, area_, outline_, center_, fname_, sname_,
+                rname_, forest_, date_, day_)
+            VALUES ( """
+                for b in row:
+                    sql = sql + "'" + b + "',"
+                sql = sql[:-1] + ');'
+                #print sql
+                try:
+                    cur2.execute(sql.replace("'\N'", 'NULL'))
+                except:
+                    print 'Error'
+                    print sql
+                print '*',
+                conn2.commit()
+        else:
+            print "Allright"
+        #return zap
+
+
+update_gar()
 #f.close()
 #cur2.copy_expert("COPY agz_.term2 FROM STDIN (FORMAT 'csv', DELIMITER '#', NULL '/N', ENCODING 'UTF8')", data)
 #conn2.commit

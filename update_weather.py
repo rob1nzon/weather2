@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-import csv
-import requests
 import urllib2
 import logging
 import datetime
-import MySQLdb
 import gzip
 import re
-import psycopg2
-
 from StringIO import StringIO
+
+import requests
+
+from psql import datebase_connect
+
 
 def get_last_date_bd():
     sql = '''SELECT data FROM agz_.weather
@@ -19,14 +19,8 @@ def get_last_date_bd():
     results = cursor.fetchall()
     return results[0][0]
 
-def unk(str):
-    # return str[str.find("'"):str.rfind("']")]
-    return str[2:str.rfind("']")]
-
 def expnda(base, wm):
     def plus(x, s):
-        #print x, s
-
         if (s != ''):
             if (srx[x] != 'NULL'):
                 if (srx[x] == 0):
@@ -104,6 +98,22 @@ def expnda(base, wm):
 
 
 def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
+    '''
+    Заливаем погоду в БД
+    :param wm:
+    :param date:
+    :param temp:
+    :param pa:
+    :param pa2:
+    :param pd:
+    :param vl:
+    :param ff:
+    :param n:
+    :param td:
+    :param rrr:
+    :param tg:
+    :return:
+    '''
     sql = """INSERT INTO agz_.weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
         VALUES ('%(w)s', '%(d)s', %(t)s,%(p)s,%(p2)s,%(pd)s,%(vl)s,%(Ff)s,%(N)s,%(Td)s,%(RRR)s,%(Tg)s)
         """ % {"w": wm, "d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl, "Ff": ff, "N": n, "Td": td,
@@ -113,10 +123,17 @@ def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
 
 
 def load_data(wmid, gdate):
+    '''
+    Загрузка архива погоды с сайта
+    :param wmid: id метеостанции
+    :param gdate:
+    :return:
+    '''
     # metar=5001&a_date1=15.06.2014&a_date2=16.06.2014&f_ed3=6&f_ed4=6&f_ed5=15&f_pe=1&f_pe1=3&lng_id=2
     # http://rp5.ru/inc/f_metar.php?
 
     now_date = datetime.date.today()
+    """Docstring for instance attribute spam."""
     delta = datetime.timedelta(days=1)
     old_date = now_date - delta
 
@@ -143,7 +160,7 @@ def load_data(wmid, gdate):
         'wmo_id': str(wmid)
     }
     url = 'http://rp5.ru/inc/f_archive.php'
-    print wmid
+    logging.info(wmid)
     try:
         r = requests.post(url, data)
     except ValueError:
@@ -173,51 +190,48 @@ def load_data(wmid, gdate):
         tdata = data.decode('utf8')
         expnda(tdata, wmid)
 
-logging.basicConfig(filename='testcsv.log', level=logging.ERROR)
-try:
-     db = psycopg2.connect("""dbname='postgis_21_sample'
-                             user='postgres'
-                             host='127.0.0.1'
-                             password='root'""")
-except:
-    print "Ошибка соединения с базой данных"
 
-cursor = db.cursor()
-filename = 'C:\Users\USER\unic1.csv'
-count = 1
+def update_weather():
+    global db, cursor, doctest, count, now_date, delta, old_date, m1, d1, y1, old_d, date_bd, sqlid, results, row
+    db, cursor = datebase_connect()
+    import doctest
 
-now_date = datetime.date.today()
-delta = datetime.timedelta(days=1)
-old_date = now_date - delta
-m1 = str(old_date.month)
-if (len(m1)==1): m1='0'+m1
-d1 = str(old_date.day)
-if (len(d1)==1): d1='0'+d1
-y1 = str(old_date.year)
-old_d =  y1 + '-' + m1 + '-' + d1
-
-try:
-    date_bd = '2010-04-01'#str(get_last_date_bd())
-except:
-    print 'Записей в базе не обнаружено'
-    date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')
-
-if (str(date_bd) != old_d):
+    doctest.testmod()
+    count = 1
+    now_date = datetime.date.today()
+    delta = datetime.timedelta(days=1)
+    old_date = now_date - delta
+    m1 = str(old_date.month)
+    if (len(m1) == 1): m1 = '0' + m1
+    d1 = str(old_date.day)
+    if (len(d1) == 1): d1 = '0' + d1
+    y1 = str(old_date.year)
+    old_d = y1 + '-' + m1 + '-' + d1
     try:
-        sqlid="""SELECT DISTINCT ON (id) id
-                 FROM agz_.mstations
-                 WHERE state LIKE 'Ярос%'""" # Только Ярославская область
-        cursor.execute(sqlid)
-        results = cursor.fetchall()
-
-        for row in results:
-            load_data(row[0], date_bd)
+        date_bd = str(get_last_date_bd())
     except:
-        print 'Ошибка...'
-else:
-    print 'База данных актуальна...'
-db.commit()
-db.close()
+        print 'Записей в базе не обнаружено'
+        date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')
+    # ToDo: переделать проверку
+    if (str(date_bd) != old_d):
+        try:
+            sqlid = """SELECT DISTINCT ON (id) id
+                 FROM agz_.mstations
+                 WHERE state LIKE 'Ярос%'"""  # Только Ярославская область
+            cursor.execute(sqlid)
+            results = cursor.fetchall()
+
+            for row in results:
+                load_data(row[0], date_bd)
+        except:
+            print 'Ошибка...'
+    else:
+        print u'База данных актуальна...'
+    db.commit()
+    db.close()
+
+
+update_weather()
 
 
 

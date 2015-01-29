@@ -35,6 +35,4 @@ row_cells[1].text = str('fef')
 row_cells[2].text = 'fef'
 row_cells = table.add_row().cells
 
-document.add_page_break()
-
 document.save('demo.docx')

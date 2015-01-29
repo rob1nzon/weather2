@@ -1,48 +1,44 @@
-import Pycluster as pc
-import psycopg2
 import re
 from sklearn.cluster import KMeans
-import numpy
-try:
-    conn = psycopg2.connect("""dbname='postgis_21_sample'
-                            user='postgres'
-                            host='127.0.0.1'
-                            password='root'""")
-except:
-    print "I am unable to connect to the database"
-
-cur = conn.cursor()
-cur.execute('SELECT id_gar, tmin_, tmax_, fname_, sname_, rname_, nterm, hareasum_\
- FROM agz_.temp_union;');
+import collections
+from psql import datebase_connect
+cur = datebase_connect()
+cur.execute('SELECT day, fname_, sname_, rname_, nterm, hareasum_, ngar, areasum_\
+            FROM agz_.day_union;')
 data = cur.fetchall()
 
 cl = []
-#for a in data:
-#    cl.append([a[-2], a[-1]])
-
-
-print "#####################"
-
-f=open('data.csv')
-
-for s in f:
-    print s.split(';')[0],re.findall('(\d+.\d+)',s.split(';')[1].replace(',', '.'))[0]
-    cl.append ([float(s.split(';')[0]), float(re.findall('(\d+.\d+)',s.split(';')[1])[0].replace(',', '.'))])
-
+for a in data:
+    cl.append([a[-2], a[-1]])
 kmeans = KMeans(init='k-means++', n_clusters=10, n_init=10)
 kmeans.fit(cl)
-print kmeans.labels_
-print 'claster'
-f = open ('two.csv','w')
-for i,j in enumerate(kmeans.labels_):
-    print i,j
-    f.write(str(i+1)+';'+str(j)+'\n')
 
-#labels, error, nfound = pc.kcluster(cl, 10)
-#centroids, _ = pc.clustercentroids(cl, clusterid=labels)
-# print labels, centroids
-# for i,a in enumerate(labels):
-#     cur.execute('''UPDATE agz_.temp_union
-#     SET cl=%s
-#     WHERE id_gar=%s;''' % (a, data[i][0]))
-# conn.commit()
+center = list(kmeans.cluster_centers_)
+
+klass = list([a[1], i] for i, a in enumerate(center))
+print klass
+print '####'
+bb = sorted(klass)
+lab = [0,0,0,0,0,0,0,0,0,0]
+print bb
+print '####'
+for i,a in enumerate(bb):
+    lab[a[1]]=i
+print lab
+
+#print collections.OrderedDict(kmeans.cluster_centers_)
+#klass = {'%s' % str(a): [float('{:.2}'.format(b[0])), float('{:.2}'.format(b[1]))] for a, b in enumerate(kmeans.cluster_centers_)}
+##print klass
+#b = list(klass.items())
+#print b
+#b.sort(key=lambda item: item[1][0])
+#print b
+#sort_klass = {'%s' % i[0]: i[1] for i in b}
+#print sort_klass
+
+
+for i, a in enumerate(kmeans.labels_):
+     cur.execute('''UPDATE agz_.day_union
+     SET cl=%s
+     WHERE (day = '%s') AND (rname_ ='%s');''' % (lab[a], data[i][0], data[i][3]))
+conn.commit()
