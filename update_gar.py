@@ -9,29 +9,30 @@ def connect():
     s, conn, cur = datebase_connect('ncuks')
     return s2, conn2, cur2, s, conn, cur
 
-def get_last_date(s, s2, cur, cur2):
-    if [s, s2] == [True, True]:
-        print "Get last date in local base"
-        sql = """ SELECT date_::text FROM agz_.gar ORDER BY date_ DESC LIMIT 1; """
-        cur2.execute(sql)
-        old_d = cur2.fetchone()[0]
-        print old_d
-        print "Get last date in NCUKS base"
-        sql = """ SELECT date_::text FROM agz_.f WHERE date_ > '%(d)s' ORDER BY date_ DESC LIMIT 1; """ % {'d': old_d}
-        cur.execute(sql)
-        try:
-            now_d = cur.fetchone()[0]
-        except:
-            now_d = old_d
-        print now_d
-        return now_d, old_d
+def get_last_date(cur, cur2):
+    print "Get last date in local base"
+    sql = """ SELECT date_::text FROM agz_.gar ORDER BY date_ DESC LIMIT 1; """
+    cur2.execute(sql)
+    old_d = cur2.fetchone()[0]
+    print old_d
+    print "Get last date in NCUKS base"
+    sql = """ SELECT date_::text FROM agz_.f WHERE date_ > '%(d)s' ORDER BY date_ DESC LIMIT 1; """ % {'d': old_d}
+    cur.execute(sql)
+    try:
+        now_d = cur.fetchone()[0]
+    except:
+        now_d = old_d
+    print now_d
+    return now_d, old_d
 
 def update_gar():
         s2, conn2, cur2, s, conn, cur = connect()
-        now_d, old_d = get_last_date(s, s2, cur, cur2)
+        now_d, old_d = get_last_date(cur, cur2)
         # now_date = datetime.date.today()-datetime.timedelta(days=1)
         # m1 = str(now_date.month)
         if old_d != now_d:
+            s_d = old_d
+            print old_d
             print "Update data: %(a)s - %(b)s" % {'a': old_d, 'b': now_d}
             sql = """(SELECT fn_, tmin_, tmax_, area_, outline_, center_, fname_, sname_, rname_, forest_, date_, day_
             FROM agz_.f WHERE date_ >= '%(o)s')""" % {'o': old_d}
