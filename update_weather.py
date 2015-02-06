@@ -19,6 +19,7 @@ def get_last_date_bd():
     results = cursor.fetchall()
     return results[0][0]
 
+
 def expnda(base, wm):
     def plus(x, s):
         if (s != ''):
@@ -35,8 +36,8 @@ def expnda(base, wm):
 
     global srx
     srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    #print base.splitlines(1)[6].split(';')[22]
-    dtch=base.splitlines(1)[7:][0].split(';')[0][1:-7]
+    # print base.splitlines(1)[6].split(';')[22]
+    dtch = base.splitlines(1)[7:][0].split(';')[0][1:-7]
     #print dtch
 
     for tline in base.splitlines(1)[7:]:
@@ -44,61 +45,61 @@ def expnda(base, wm):
         if (dtch != tarr[0][1:-7]):
             #ToDo Оптимизировать запросы к базе данных
             add_to_db(wm, dtch,
-              srx[0], srx[1], srx[2], srx[3], srx[4],
-              srx[5], srx[6], srx[7], srx[8], srx[9])
+                      srx[0], srx[1], srx[2], srx[3], srx[4],
+                      srx[5], srx[6], srx[7], srx[8], srx[9])
             srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             dtch = tarr[0][1:-7]
         try:
-            plus(0, tarr[1][1:-1]) # t температура
+            plus(0, tarr[1][1:-1])  # t температура
         except:
             print '1', tarr[1]
         try:
-            plus(1, tarr[2][1:-1]) # pa атмосферное давление
+            plus(1, tarr[2][1:-1])  # pa атмосферное давление
         except:
             print '2', tarr[2]
         try:
-            plus(2, tarr[3][1:-1]) # pa2 атмосферное давление на уровне моря
+            plus(2, tarr[3][1:-1])  # pa2 атмосферное давление на уровне моря
         except:
             print '3', tarr[3]
         try:
-            plus(3, tarr[4][1:-1]) # pd разница давлений
+            plus(3, tarr[4][1:-1])  # pd разница давлений
         except:
             print '4', tarr[4]
         try:
-            plus(4, tarr[5][1:-1]) # vl Относительная влажность
+            plus(4, tarr[5][1:-1])  # vl Относительная влажность
         except:
             print '5', tarr[5]
         try:
-            plus(5, tarr[7][1:-1]) # ff  Скорость ветра
+            plus(5, tarr[7][1:-1])  # ff  Скорость ветра
         except:
             print '7', tarr[7]
         try:
-            plus(6, re.findall('(\d+)', tarr[10][1:-1])[0]) # n Облачность
+            plus(6, re.findall('(\d+)', tarr[10][1:-1])[0])  # n Облачность
             #print '6', tarr[10]
         except:
             #print '6', tarr[10]
             plus(6, '')
         try:
-            plus(7, tarr[22][1:-1]) # Скорость ветра
+            plus(7, tarr[22][1:-1])  # Скорость ветра
             #print '22', tarr[22]
         except:
             #print '22', tarr[22]
             plus(7, '')
         try:
-            srx[8] += re.findall('(\d+.\d+)', tarr[23][1:-1])[0] # RRR Точка росы
+            srx[8] += re.findall('(\d+.\d+)', tarr[23][1:-1])[0]  # RRR Точка росы
         except:
             srx[8] += 0
         try:
-            plus(9, tarr[26][1:-1]) # Tg температура поверхности
+            plus(9, tarr[26][1:-1])  # Tg температура поверхности
         except:
             plus(9, '')
 
-        #print 'srx', srx
-    #print 'FINAL', srx
+            #print 'srx', srx
+            #print 'FINAL', srx
 
 
 def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
-    '''
+    """
     Заливаем погоду в БД
     :param wm:
     :param date:
@@ -113,22 +114,22 @@ def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
     :param rrr:
     :param tg:
     :return:
-    '''
+    """
     sql = """INSERT INTO agz_.weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
         VALUES ('%(w)s', '%(d)s', %(t)s,%(p)s,%(p2)s,%(pd)s,%(vl)s,%(Ff)s,%(N)s,%(Td)s,%(RRR)s,%(Tg)s)
         """ % {"w": wm, "d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl, "Ff": ff, "N": n, "Td": td,
                "RRR": rrr, "Tg": tg}
-    #print sql
+    # print sql
     cursor.execute(sql)
 
 
 def load_data(wmid, gdate):
-    '''
+    """
     Загрузка архива погоды с сайта
     :param wmid: id метеостанции
     :param gdate:
     :return:
-    '''
+    """
     # metar=5001&a_date1=15.06.2014&a_date2=16.06.2014&f_ed3=6&f_ed4=6&f_ed5=15&f_pe=1&f_pe1=3&lng_id=2
     # http://rp5.ru/inc/f_metar.php?
 
@@ -145,7 +146,7 @@ def load_data(wmid, gdate):
     d1 = str(old_date.day)
     y1 = str(old_date.year)
 
-    dt1 = gdate[8:10]+'.'+gdate[5:7]+'.'+gdate[0:4]
+    dt1 = gdate[8:10] + '.' + gdate[5:7] + '.' + gdate[0:4]
     dt2 = d1 + '.' + m1 + '.' + y1
 
     data = {
@@ -193,10 +194,7 @@ def load_data(wmid, gdate):
 
 def update_weather():
     global db, cursor, doctest, count, now_date, delta, old_date, m1, d1, y1, old_d, date_bd, sqlid, results, row
-    db, cursor = datebase_connect()
-    import doctest
-
-    doctest.testmod()
+    f, db, cursor = datebase_connect('localhost')
     count = 1
     now_date = datetime.date.today()
     delta = datetime.timedelta(days=1)
@@ -231,7 +229,8 @@ def update_weather():
     db.close()
 
 
-update_weather()
+if __name__ == '__main__':
+    update_weather()
 
 
 

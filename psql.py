@@ -4,7 +4,7 @@ def datebase_connect(host):
     '''
     Возвращает объекты для доступа к базе
     Name of host loaclhost or ncuks :param host:
-    True, conn, cur :return:
+    :return: True, conn, cur
     '''
     if host == 'localhost':
         try:
