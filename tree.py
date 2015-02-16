@@ -8,9 +8,13 @@ from psql import datebase_connect
 import pickle
 f, conn, cur = datebase_connect('localhost')
 #date_part('month', day), EXTRACT(DOW FROM day)+1
-cur.execute('''SELECT day, rname_, cl, date_part('month', day), EXTRACT(DOW FROM day), temp,pa,vl,ff,n,rrr
-  FROM agz_.day_union WHERE (temp is not null) AND (pa is not null)
-  AND (vl is not null) AND (ff is not null) AND  (n is not null) AND (rrr is not null) AND (cl is not null) ORDER BY rname_ ;''')
+cur.execute('''
+SELECT start_day, rname_, cl,
+       pa, ff, n, td, rrr, pa1, ff1, n1, td1,
+       rrr1, pa2, ff2, n2, td2, rrr2, pa3, ff3,
+       n3, td3, rrr3, delta, delta1, delta2, delta3
+  FROM agz_.week_union WHERE temp3 is not null ORDER BY rname_
+''')
 data = cur.fetchall()
 
 cl = data

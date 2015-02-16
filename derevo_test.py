@@ -7,7 +7,7 @@ from sklearn import tree
 from pandas import DataFrame
 from psql import datebase_connect
 import pydot
-#import doctest
+
 
 
 def addtocsv(day, region, c, r):

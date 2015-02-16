@@ -11,6 +11,10 @@ import requests
 from psql import datebase_connect
 
 
+global f, db, cursor
+f, db, cursor = datebase_connect('localhost')
+
+
 def get_last_date_bd():
     sql = '''SELECT data FROM agz_.weather
         ORDER BY weather.data  DESC
@@ -123,6 +127,7 @@ def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
     cursor.execute(sql)
 
 
+
 def load_data(wmid, gdate):
     """
     Загрузка архива погоды с сайта
@@ -134,7 +139,6 @@ def load_data(wmid, gdate):
     # http://rp5.ru/inc/f_metar.php?
 
     now_date = datetime.date.today()
-    """Docstring for instance attribute spam."""
     delta = datetime.timedelta(days=1)
     old_date = now_date - delta
 
@@ -193,8 +197,6 @@ def load_data(wmid, gdate):
 
 
 def update_weather():
-    global db, cursor, doctest, count, now_date, delta, old_date, m1, d1, y1, old_d, date_bd, sqlid, results, row
-    f, db, cursor = datebase_connect('localhost')
     count = 1
     now_date = datetime.date.today()
     delta = datetime.timedelta(days=1)
@@ -212,17 +214,18 @@ def update_weather():
         date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')
     # ToDo: переделать проверку
     if (str(date_bd) != old_d):
-        try:
-            sqlid = """SELECT DISTINCT ON (id) id
+        sqlid = """SELECT DISTINCT ON (id) id
                  FROM agz_.mstations
                  WHERE state LIKE 'Ярос%'"""  # Только Ярославская область
-            cursor.execute(sqlid)
-            results = cursor.fetchall()
-
-            for row in results:
+        cursor.execute(sqlid)
+        results = cursor.fetchall()
+        for row in results:
+            try:
                 load_data(row[0], date_bd)
-        except:
-            print 'Ошибка...'
+            except:
+                pass
+
+
     else:
         print u'База данных актуальна...'
     db.commit()
@@ -231,7 +234,6 @@ def update_weather():
 
 if __name__ == '__main__':
     update_weather()
-
 
 
 

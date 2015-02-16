@@ -29,7 +29,7 @@ def connect_db():
     f, conn, cur = datebase_connect('localhost')
 
 
-def get_data_bd():
+def get_data_bd_day():
     """
     Получение данных из БД
     :return: data
@@ -37,9 +37,19 @@ def get_data_bd():
     cur.execute('SELECT day, fname_, sname_, rname_, nterm, hareasum_, areasum_\
                 FROM agz_.day_union WHERE  (areasum_<21002390)')
     return cur.fetchall()
+    cur.execute('UPDATE agz_.week_union   SET cl=10 WHERE areasum_>=21002390')
+
+def get_data_bd():
+    """
+    Получение данных из БД
+    :return: data
+    """
+    cur.execute('SELECT start_day, fname_, sname_, rname_, areasum_\
+                FROM agz_.week_union WHERE  (areasum_<21002390)')
+    return cur.fetchall()
 
 
-def insert_data_bd(data, kmeans):
+def insert_data_bd_day(data, kmeans):
     """
     Загрузка классов в БД
     :param data:
@@ -51,6 +61,20 @@ def insert_data_bd(data, kmeans):
         cur.execute('''UPDATE agz_.day_union
          SET cl=%s
          WHERE (day = '%s') AND (rname_ ='%s');''' % (a, data[i][0], data[i][3]))
+    conn.commit()
+
+def insert_data_bd(data, kmeans):
+    """
+    Загрузка классов в БД
+    :param data:
+    :param lab:
+    :param kmeans:
+    :return:
+    """
+    for i, a in enumerate(kmeans.labels_):
+        cur.execute('''UPDATE agz_.week_union
+         SET cl=%s
+         WHERE (start_day = '%s') AND (rname_ ='%s');''' % (a, data[i][0], data[i][3]))
     conn.commit()
 
 
