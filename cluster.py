@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 from sklearn.cluster import KMeans
-import collections
 from psql import datebase_connect
 
 
@@ -23,7 +22,6 @@ class MyKMeans(KMeans):
             self.labels_[i] = lab[a]
 
 
-
 def connect_db():
     global f, conn, cur
     f, conn, cur = datebase_connect('localhost')
@@ -35,9 +33,11 @@ def get_data_bd_day():
     :return: data
     """
     cur.execute('SELECT day, fname_, sname_, rname_, nterm, hareasum_, areasum_\
-                FROM agz_.day_union WHERE  (areasum_<21002390)')
+                FROM agz_.day_union ')
+    #cur.execute('UPDATE agz_.week_union SET cl=10 WHERE areasum_>=21002390')
+    #conn.commit()
     return cur.fetchall()
-    cur.execute('UPDATE agz_.week_union   SET cl=10 WHERE areasum_>=21002390')
+
 
 def get_data_bd():
     """
@@ -45,7 +45,7 @@ def get_data_bd():
     :return: data
     """
     cur.execute('SELECT start_day, fname_, sname_, rname_, areasum_\
-                FROM agz_.week_union WHERE  (areasum_<21002390)')
+                FROM agz_.week_union_norm WHERE areasum_ > 0')
     return cur.fetchall()
 
 
@@ -63,6 +63,11 @@ def insert_data_bd_day(data, kmeans):
          WHERE (day = '%s') AND (rname_ ='%s');''' % (a, data[i][0], data[i][3]))
     conn.commit()
 
+def insert_data_t(data, kmeans):
+    for i, a in enumerate(kmeans.labels_):
+        print '%s %s %s' % (data[i][0], data[i][3], a)
+
+
 def insert_data_bd(data, kmeans):
     """
     Загрузка классов в БД
@@ -72,12 +77,17 @@ def insert_data_bd(data, kmeans):
     :return:
     """
     for i, a in enumerate(kmeans.labels_):
-        cur.execute('''UPDATE agz_.week_union
-         SET cl=%s
-         WHERE (start_day = '%s') AND (rname_ ='%s');''' % (a, data[i][0], data[i][3]))
+        cur.execute('''UPDATE agz_.week_union_norm
+         SET cl=%s+1, pcl=999
+         WHERE (start_day = '%s') AND (rname_ ='%s') AND (sname_ = '%s');''' % (a, data[i][0], data[i][3], data[i][2]))
     conn.commit()
 
-
+def set_null_fire():
+    cur.execute('''
+    UPDATE agz_.week_union_norm
+    SET cl=0
+    WHERE areasum_ = 0''')
+    conn.commit()
 
 
 if __name__ == '__main__':
@@ -86,20 +96,12 @@ if __name__ == '__main__':
     cl = []
     for a in data:
         cl.append([a[-1], 0])
-    kmeans = MyKMeans(init='k-means++', n_clusters=10, n_init=10)
+    kmeans = MyKMeans(init='k-means++', n_clusters=10)
     kmeans.sortfit(cl)
+    print kmeans.cluster_centers_, kmeans.inertia_
 
     insert_data_bd(data, kmeans)
-
-    #print collections.OrderedDict(kmeans.cluster_centers_)
-    #klass = {'%s' % str(a): [float('{:.2}'.format(b[0])), float('{:.2}'.format(b[1]))] for a, b in enumerate(kmeans.cluster_centers_)}
-    ##print klass
-    #b = list(klass.items())
-    #print b
-    #b.sort(key=lambda item: item[1][0])
-    #print b
-    #sort_klass = {'%s' % i[0]: i[1] for i in b}
-    #print sort_klass
+    set_null_fire()
 
 
 

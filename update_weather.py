@@ -4,6 +4,7 @@ import logging
 import datetime
 import gzip
 import re
+import csv
 from StringIO import StringIO
 
 import requests
@@ -17,7 +18,7 @@ f, db, cursor = datebase_connect('localhost')
 
 def get_last_date_bd():
     sql = '''SELECT data FROM agz_.weather
-        ORDER BY weather.data  DESC
+        ORDER BY weather.data DESC
         LIMIT 1'''
     cursor.execute(sql)
     results = cursor.fetchall()
@@ -25,6 +26,17 @@ def get_last_date_bd():
 
 
 def expnda(base, wm):
+    head = csv.DictReader(base.splitlines(1)[6:7], delimiter=';').fieldnames
+    head[0] = 'data'
+    head[-2] = 'Ed'
+    dt = csv.DictReader(base.splitlines(1)[7:], delimiter=';', fieldnames=head)
+    sql = '''INSERT INTO agz_.weather(wmid, {name})
+    VALUES ({wmid}, %({val})s)   '''.format(**{'name': ', '.join(head), 'wmid': wm, 'val': ')s, %('.join(head)})
+    #print sql
+    cursor.executemany(sql, dt)
+
+
+def expnda1(base, wm):
     def plus(x, s):
         if (s != ''):
             if (srx[x] != 'NULL'):
@@ -79,9 +91,7 @@ def expnda(base, wm):
             print '7', tarr[7]
         try:
             plus(6, re.findall('(\d+)', tarr[10][1:-1])[0])  # n Облачность
-            #print '6', tarr[10]
         except:
-            #print '6', tarr[10]
             plus(6, '')
         try:
             plus(7, tarr[22][1:-1])  # Скорость ветра
@@ -98,32 +108,18 @@ def expnda(base, wm):
         except:
             plus(9, '')
 
-            #print 'srx', srx
-            #print 'FINAL', srx
 
 
-def add_to_db(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
+
+
+def add_to_db2(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
     """
     Заливаем погоду в БД
-    :param wm:
-    :param date:
-    :param temp:
-    :param pa:
-    :param pa2:
-    :param pd:
-    :param vl:
-    :param ff:
-    :param n:
-    :param td:
-    :param rrr:
-    :param tg:
-    :return:
     """
     sql = """INSERT INTO agz_.weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
         VALUES ('%(w)s', '%(d)s', %(t)s,%(p)s,%(p2)s,%(pd)s,%(vl)s,%(Ff)s,%(N)s,%(Td)s,%(RRR)s,%(Tg)s)
         """ % {"w": wm, "d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl, "Ff": ff, "N": n, "Td": td,
                "RRR": rrr, "Tg": tg}
-    # print sql
     cursor.execute(sql)
 
 
@@ -193,7 +189,8 @@ def load_data(wmid, gdate):
         f = gzip.GzipFile(fileobj=buf)
         data = f.read()
         tdata = data.decode('utf8')
-        expnda(tdata, wmid)
+        expnda(data, wmid)
+        db.commit()
 
 
 def update_weather():
@@ -214,16 +211,16 @@ def update_weather():
         date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')
     # ToDo: переделать проверку
     if (str(date_bd) != old_d):
+        date_bd = '2009-01-01'
         sqlid = """SELECT DISTINCT ON (id) id
                  FROM agz_.mstations
-                 WHERE state LIKE 'Ярос%'"""  # Только Ярославская область
+                 WHERE state LIKE 'Красноя%' """  # Только Ярославская область
         cursor.execute(sqlid)
         results = cursor.fetchall()
         for row in results:
-            try:
-                load_data(row[0], date_bd)
-            except:
-                pass
+            date_bd = str(get_last_date_bd())
+            load_data(row[0], date_bd)
+
 
 
     else:

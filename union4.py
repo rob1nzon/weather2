@@ -4,8 +4,34 @@ import logging
 from psql import datebase_connect
 import update_weather
 import random
-from forecast import
 
+global region_r
+region_r_yar = ['Большесельский', 'Борисоглебский', 'Брейтовский',
+                'Гаврилов-Ямский', 'Любимский', 'Мышкинский',
+                'Некоузский', 'Некрасовский', 'Первомайский', 'Переславский',
+                'Пошехонский', 'Ростовский', 'Рыбинский', 'Тутаевский',
+                'Ярославский', 'Угличский']
+
+
+#region_r = ['Зейский', 'Магдагачинский', 'Сковородинский', 'Селемджинский', 'Мазановский',
+#'Архаринский', 'Тындинский', 'Свободненский', 'Бурейский', 'Серышевский',
+#'Шимановский', 'Благовещенский', 'Михайловский', 'Белогорский', 'Ивановский',
+#'Ромненский', 'Октябрьский', 'Завитинский', 'Тамбовский', 'Константиновский']
+
+region_r = ['Абанский', 'Архаринский', 'Ачинский', 'Балахтинский', 'Белогорский',
+             'Березовский', 'Бирилюсский', 'Благовещенский', 'Боготольский',
+             'Богучанский', 'Большемуртинский', 'Большесельский', 'Большеулуйский', 'Борисоглебский',
+             'Брейтовский', 'Бурейский', 'Гаврилов-Ямский', 'Даниловский', 'Дзержинский', 'Емельяновский',
+             'Енисейский', 'Ермаковский', 'Завитинский', 'Зейский', 'Ивановский', 'Идринский',
+             'Иланский', 'Ирбейский', 'Казачинский', 'Канский', 'Каратузский', 'Кежемский', 'Козульский',
+             'Константиновский', 'Краснотуранский', 'Курагинский', 'Любимский', 'Магдагачинский',
+             'Мазановский', 'Манский', 'Минусинский', 'Михайловский', 'Мотыгинский', 'Назаровский', 'Некоузский',
+             'Некрасовский', 'Нижнеингашский', 'Новоселовский', 'Октябрьский', 'Партизанский', 'Первомайский',
+             'Переславль-Залесский', 'Переславский', 'Пировский', 'Пошехонский', 'Ромненский',
+             'Ростовский', 'Рыбинский', 'Саянский', 'Свободненский', 'Северо-Енисейский', 'Селемджинский',
+             'Серышевский', 'Сковородинский', 'Сухобузимский', 'Таймырский', 'Тамбовский', 'Тасеевский', 'Туруханский',
+             'Тутаевский', 'Тындинский', 'Тюхтетский', 'Угличский', 'Ужурский', 'Уярский', 'Шарыповский',
+             'Шимановский', 'Шушенский', 'Эвенкийский', 'Ярославский']
 
 
 ccc, conn, cur = datebase_connect('localhost')
@@ -48,7 +74,9 @@ def first_day(day, fname_, rname_, sname_):
     ''' % {'day': day, 'fname_': fname_, 'sname_': sname_, 'rname_': rname_}
     logging.info(sql)
     cur.execute(sql)
-    if cur.fetchone()[0] is 0:
+    result = cur.fetchone()[0]
+    print result
+    if result == 0:
         return True
     else:
         return False
@@ -92,17 +120,13 @@ def add_new_day(areasum, center_, day, fname_, rname_, sname_):
     :param sname_:
     :return:
     """
-    w = d_weather(center_, day)
     sql = '''INSERT INTO agz_.day_union
-                    (day, fname_, sname_, rname_, ngar, areasum_,
-                    temp, pa, pa2, pd, vl, ff, n, td, rrr, tg, center, wmid, need_prog)
-                VALUES ('{day:s}', '{fname_:s}', '{rname_:s}', '{ngar}', '{areasum}',
-                    {temp},{pa},{pa2},{pd},{vl},{ff},{n2},{tg},{td},{rrr}, '{center_}',
-                    '{wmid}','{need_prog}');'''.format(
+                    (day, fname_, sname_, rname_, ngar, areasum_, need_prog)
+                VALUES ('{day:s}', '{fname_:s}', '{rname_:s}', '{sname_:s}', '{ngar}', '{areasum}',
+                    '{need_prog}');'''.format(
         **dict(day=day, fname_=fname_, sname_=sname_, rname_=rname_, areasum=str(areasum), ngar=str(null_day(areasum)),
-               temp=w[1],
-               pa=w[2], pa2=w[3], pd=w[4], vl=w[5], ff=w[6], n2=w[7], td=w[8], rrr=w[9], tg=w[10], center_=center_,
-               wmid=w[0], need_prog=needprog(day, need_prog, rname_)))
+               need_prog=False))
+    logging.info(sql)
     cur.execute(sql.replace('None', '0'))
     conn.commit()
 
@@ -129,8 +153,9 @@ def get_new_center(center_, day, fname_, rname_, sname_):
         cur.execute(center_new)
         c_new = cur.fetchall()[0][0]
     except:
-        sql = '''SELECT ST_ASText(loc) FROM agz_.mstations
-        WHERE region LIKE '{region}%' LIMIT 1'''.format(**{'region': rname_})
+        sql = '''SELECT ST_ASText(geom)
+          FROM agz_."boundary-polygon"
+          WHERE name LIKE '{region}%' LIMIT 1'''.format(**{'region': rname_})
         logging.info(sql)
         cur.execute(sql)
         c_new = cur.fetchall()[0][0]
@@ -148,15 +173,11 @@ def update_current_day(areasum, center_, day, fname_, rname_, sname_):
     :param sname_:
     :return:
     """
-    w = d_weather(center_, day)
     c_new = get_new_center(center_, day, fname_, rname_, sname_)
     sql = '''UPDATE agz_.day_union SET
-        areasum_=areasum_+{areasum}, ngar=ngar+1,
-        temp={temp}, pa={pa}, pa2={pa2}, pd={pd}, vl={vl}, ff={ff}, n={n2}, td={td},
-        rrr={rrr}, tg={tg}, center='{center_}'
+        areasum_=areasum_+{areasum}, ngar=ngar+1
         WHERE day='{day:s}'::timestamp AND fname_='{fname_}' AND sname_='{sname_}' AND rname_='{rname_}'
-        '''.format(**dict(day=day, fname_=fname_, sname_=sname_, rname_=rname_, areasum=areasum, temp=w[1], pa=w[2],
-                          pa2=w[3], pd=w[4], vl=w[5], ff=w[6], n2=w[7], td=w[8], rrr=w[9], tg=w[10],
+        '''.format(**dict(day=day, fname_=fname_, sname_=sname_, rname_=rname_, areasum=areasum,
                           center_=str(c_new)))
     # print sql
     cur.execute(sql.replace('None', 'Null'))
@@ -177,8 +198,10 @@ def push_day(day, fname_, sname_, rname_, areasum, nterm, hareasum_, center_):
     :return:
     """
     if first_day(day, fname_, rname_, sname_):
+        print 'NEW DAY'
         add_new_day(areasum, center_, day, fname_, rname_, sname_)
     else:
+        print 'OLD DAY'
         update_current_day(areasum, center_, day, fname_, rname_, sname_)
 
 
@@ -198,36 +221,6 @@ def d_therm(id_gar, date, region):
         return cur.fetchall()[0]
     except:
         return [0, 0]
-
-
-def d_weather(center, date):
-    """
-    Загрузить погоду
-    :param center:
-    :param date:
-    :return:
-    """
-    #### at first get wmid
-    sql = '''SELECT id FROM agz_.mstations
-       ORDER BY loc <-> '{p:s}'::geometry
-       LIMIT 100'''.format(**{'p': center})
-    logging.debug(sql)
-    cur.execute(sql)
-    wmid_list = cur.fetchall()
-    for w in wmid_list:
-        #update_weather.load_data(w[0], date)
-        sql = '''SELECT wmid, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg
-        FROM agz_.weather WHERE wmid = {w:s} AND (data::text LIKE '{d:s}') LIMIT 1;
-        '''.format(**{'w': str(w[0]), 'd': date})
-        logging.debug(sql)
-        cur.execute(sql)
-        try:
-            return cur.fetchall()[0]
-            break
-        except:
-            pass
-
-
 
 
 def classification(gar_data, start_data):
@@ -269,82 +262,107 @@ def classification(gar_data, start_data):
 
 def union_day(c = object):
     global period_r
+    period_r = {'Брейтовский': [4, 9],
+                'Партизанский': [1, 11],
+                'Идринский': [3, 11],
+                'Шушенский': [3, 11],
+                'Дзержинский': [4, 12],
+                'Мазановский': [1, 11],
+                'Ярославский': [4, 11],
+                'Козульский': [1, 11],
+                'Ростовский': [3, 8],
+                'Константиновский': [3, 11],
+                'Зейский': [1, 12],
+                'Лесосибирск': [1, 12],
+                'Некоузский': [4, 7],
+                'Боготольский': [1, 10],
+                'Магдагачинский': [1, 12],
+                'Рыбинский': [1, 10],
+                'Михайловский': [3, 11],
+                'Углич': [5, 5],
+                'Селемджинский': [1, 12],
+                'Тутаево': [7, 7],
+                'Эвенкийский': [1, 12],
+                'Шарыповский': [1, 12],
+                'Ростов': [4, 8],
+                'Туруханский': [1, 11],
+                'Тюхтетский': [1, 10],
+                'Ромненский': [1, 12],
+                'Пошехонский': [4, 8],
+                'Тындинский': [1, 12],
+                'Угличский': [4, 11],
+                'Балахтинский': [1, 12],
+                'Сковородинский': [1, 12],
+                'Большесельский': [4, 10],
+                'Большемуртинский': [1, 12],
+                'Казачинский': [2, 10],
+                'Большеулуйский': [4, 10],
+                'Райчихинск': [3, 11],
+                'Рыбинск': [4, 9],
+                'Переславский': [4, 9],
+                'Березовский': [1, 12],
+                'Абанский': [4, 12],
+                'Игарка': [5, 9],
+                'Даниловский': [4, 4],
+                'Ужурский': [1, 12],
+                'Саянский': [3, 11],
+                'Благовещенск': [1, 12],
+                'Архаринский': [1, 12],
+                'Тамбовский': [2, 12],
+                'Тасеевский': [2, 11],
+                'Шимановский': [3, 12],
+                'Кежемский': [1,12],
+                'Таймырский': [1,12],
+                'Тутаевский': [4,10],
+                'Переславль-Залесский': [4,4],
+                'Благовещенский': [1,12],
+                'Ярославль': [4,7],
+                'Некрасовский': [3,11],
+                'Северо-Енисейский': [1,9],
+                'Иланский': [3,12],
+                'Мотыгинский': [1,12],
+                'Канский': [1,12],
+                'Бурейский': [2,11],
+                'Курагинский': [2,11],
+                'Серышевский': [2,12],
+                'Первомайский': [4,6],
+                'Енисейский': [1,12],
+                'Завитинский': [2,11],
+                'Ачинский': [1,12],
+                'Сухобузимский': [4,10],
+                'Каратузский': [4,11],
+                'Нижнеингашский': [4,12],
+                'Минусинский': [3,12],
+                'Уярский': [1,10],
+                'Любимский': [5,10],
+                'Белогорский': [1,11],
+                'Гаврилов-Ямский': [4,8],
+                'Новоселовский': [3,12],
+                'Октябрьский': [3,11],
+                'Пировский': [1,12],
+                'Богучанский': [1,12],
+                'Бирилюсский': [3,11],
+                'Ермаковский': [3,11],
+                'Краснотуранский': [3,11],
+                'Емельяновский': [1,12],
+                'Борисоглебский': [4,9],
+                'Ивановский': [3,11],
+                'Назаровский': [1,12],
+                'Ирбейский': [1,11],
+                'Манский': [1,12],
+                'Свободненский': [1,12]}
 
-    period_r = {'Партизанский': [2, 44],
-                'Идринский': [11, 44],
-                'Шушенский': [12, 46],
-                'Дзержинский': [14, 52],
-                'Мазановский': [3, 47],
-                'Козульский': [5, 46],
-                'Константиновский': [12, 46],
-                'Зейский': [1, 52],
-                'Боготольский': [4, 42],
-                'Магдагачинский': [1, 52],
-                'Рыбинский': [1, 42],
-                'Михайловский': [12, 47],
-                'Селемджинский': [1, 52],
-                'Эвенкийский': [1, 52],
-                'Шарыповский': [2, 49],
-                'Туруханский': [2, 52],
-                'Тюхтетский': [2, 42],
-                'Ромненский': [4, 49],
-                'Тындинский': [1, 50],
-                'Балахтинский': [2, 50],
-                'Сковородинский': [1, 50],
-                'Большемуртинский': [2, 51],
-                'Казачинский': [6, 44],
-                'Большеулуйский': [14, 42],
-                'Березовский': [1, 52],
-                'Абанский': [15, 49],
-                'Игарка': [22, 36],
-                'Ужурский': [4, 51],
-                'Саянский': [12, 44],
-                'Архаринский':[2,52],
-                'Тамбовский':[9,51],
-                'Тасеевский':[8,48],
-                'Шимановский':[10,51],
-                'Кежемский':[1,52],
-                'Таймырский':[2,52],
-                'Благовещенский':[3,49],
-                'Северо-Енисейский':[22,52],
-                'Иланский':[11,48],
-                'Мотыгинский':[1,52],
-                'Канский':[2,51],
-                'Бурейский':[9,48],
-                'Курагинский':[8,46],
-                'Серышевский':[6,49],
-                'Енисейский':[4,51],
-                'Завитинский':[5,46],
-                'Ачинский':[1,50],
-                'Сухобузимский':[15,43],
-                'Каратузский':[14,46],
-                'Нижнеингашский':[14,52],
-                'Минусинский':[12,49],
-                'Уярский':[4,42],
-                'Белогорский':[4,47],
-                'Новоселовский':[12,50],
-                'Октябрьский':[12,46],
-                'Пировский':[2,52],
-                'Богучанский':[1,52],
-                'Бирилюсский':[12,48],
-                'Ермаковский':[13,47],
-                'Краснотуранский':[13,46],
-                'Емельяновский':[2,52],
-                'Ивановский':[12,46],
-                'Назаровский':[2,50],
-                'Ирбейский':[5,44],
-                'Манский':[2,51],
-                'Свободненский':[1,52]}
-
-    # region_r = ['Ростовский']
+    #region_r = ['Ростовский']
     delta = datetime.timedelta(days=1)
     datebase_connect('localhost')
     logging.basicConfig(level=logging.NOTSET)
     logging.getLogger('tipper')
     for region in region_r:
         print region
-        sql = "SELECT day FROM agz_.day_union WHERE ((sname_ = 'Ярославская обл.') OR (sname_ = 'Амурская обл.') OR (sname_ = 'Красноярский край'))  AND (rname_='{r:s}') ORDER BY day DESC LIMIT 1".format(
-            **{'r': region})
+        sql = "SELECT day FROM agz_.day_union WHERE" \
+              " ((sname_ = 'Ярославская обл.') OR (sname_ = 'Амурская обл.')" \
+              " OR (sname_ = 'Красноярский край'))  AND (rname_='{r:s}')" \
+              " ORDER BY day DESC LIMIT 1".format(**{'r': region})
         logging.debug(sql)
         cur.execute(sql)
         last_date = 0
@@ -400,7 +418,7 @@ def union_day(c = object):
                             push_day(s_data, g[3], g[4], g[5], get_area(t[1][0], gid) - get_area(t[1][1], gid),
                                      therm[0], therm[0], g[6])
                 s_d = s_d + delta
-            conn.commit()
+                conn.commit()
 
 
 if __name__ == '__main__':

@@ -46,33 +46,48 @@ def normalization():
     """
     cur.execute('''
     CREATE TEMPORARY TABLE temp_day_union (day date, fname_ text,  sname_ text,  rname_ text,
-    nterm integer,  hareasum_ real,  ngar integer,  areasum_ integer,  temp real,
+    ngar integer,  areasum_ integer,  temp real,
     pa real,  vl real,  ff real,  n real,  td real, rrr real);
     INSERT INTO temp_day_union(
-    day, fname_, sname_, rname_, nterm, hareasum_, ngar, areasum_,
+    day, fname_, sname_, rname_, ngar, areasum_,
     temp, pa, vl, ff, n, td, rrr)
-    SELECT day, fname_, sname_, rname_, nterm, hareasum_, ngar, areasum_,
+    SELECT day, fname_, sname_, rname_, ngar, areasum_,
     (temp+ABS({tempmin}))/(ABS({tempmin})+{tempmax}), (pa+ABS({pamin}))/(ABS({pamin})+{pamax}),
     (vl+ABS({vlmin}))/(ABS({vlmin})+{vlmax}), (ff+ABS({ffmin}))/(ABS({ffmin})+{ffmax}),
     (n+ABS({nmin}))/(ABS({nmin})+{nmax}), (td+ABS({tdmin}))/(ABS({tdmin})+{tdmax}),
     (rrr+ABS({rrrmin}))/(ABS({rrrmin})+{rrrmax}) FROM agz_.day_union;'''.format(**get_max_min()))
 
 
-def get_waring_period(interval='week'): #WHERE areasum_ > 0
-    sql = '''SELECT rname_, MIN(EXTRACT(%s FROM day)), MAX(EXTRACT(%s FROM day))FROM agz_.day_union  GROUP BY rname_ ''' % (interval, interval)
+def get_waring_period(interval='week', table='day_union'): #WHERE areasum_ > 0
+    sql = '''SELECT rname_, MIN(EXTRACT({interval}
+    FROM day)), MAX(EXTRACT({interval} FROM day))
+    FROM agz_.{table}  GROUP BY rname_ '''.format(dict(interval=interval, table=table))
     cur.execute(sql)
     return {a[0]: [a[1], a[2]] for a in cur.fetchall()}
 
 
+def get_waring_period_r(interval='week', table='day_union'): #WHERE areasum_ > 0
+    sql = '''SELECT rname_, MIN(EXTRACT(WEEK FROM tmin_)),
+	MAX(EXTRACT(MONTH FROM tmin_))
+  FROM agz_.gar
+  WHERE ((sname_ = 'Ярославская обл.') OR (sname_ = 'Амурская обл.') OR (sname_ = 'Красноярский край'))
+  AND area_ > 0
+  GROUP BY rname_ '''
+    cur.execute(sql)
+    for a in cur.fetchall():
+        print "'" + str(a[0]) + "': [" + str(a[1]) + ', ' + str(a[2]) + '],'
+
 
 def week_group():
     for region in region_r:
-        for year in range(int(period_r_year[region][0]), int(period_r_year[region][1]) + 1):
-            for week in range(int(period_r_week[region][0]) + 3, int(period_r_week[region][1]) + 1):
-                cur.execute('''SELECT MIN(day) FROM temp_day_union'''.format(**{'week': week, 'year': year, 'region': region}))
-                print cur.fetchall()
-                if cur.fetchone() is not None:
-                    sql = '''
+        for year in range(int(period_r_year[region][0]), int(period_r_year[region][1])+1):
+            for week in range(int(period_r_week[region][0]) + 5, int(period_r_week[region][1]) + 1):
+                cur.execute('''SELECT MIN(day) FROM temp_day_union
+                WHERE EXTRACT(WEEK FROM day) = {week} AND EXTRACT(YEAR FROM day) ={year}  AND rname_ = '{region}' '''.format(**{'week': week, 'year': year, 'region': region}))
+                ex = cur.fetchone()[0]
+                #print ex
+                if ex != None:
+                    sql='''
                     WITH week1 AS (SELECT SUM(areasum_), AVG(temp) AS temp1, AVG(pa) AS pa1, AVG(vl) AS vl1, AVG(ff) AS ff1, AVG(n) AS n1, AVG(td) AS td1, AVG(rrr) AS rrr1
                     FROM temp_day_union WHERE EXTRACT(WEEK FROM day) = {week}-1 AND EXTRACT(YEAR FROM day) ={year} AND rname_ = '{region}'),
                     week2 AS (SELECT SUM(areasum_), AVG(temp) AS temp2, AVG(pa) AS tpa2, AVG(vl) AS vl2, AVG(ff) AS ff2, AVG(n) AS n2, AVG(td) AS td2, AVG(rrr) AS rrr2
@@ -92,10 +107,14 @@ def week_group():
                     AVG(temp2), AVG(tpa2), AVG(vl2), AVG(ff2), AVG(n2), AVG(td2), AVG(rrr2),
                     AVG(temp3), AVG(pa3), AVG(vl3), AVG(ff3), AVG(n3), AVG(td3), AVG(rrr3),
                     ABS(AVG(vl)-AVG(temp)),ABS(AVG(vl1)-AVG(temp1)),ABS(AVG(vl2)-AVG(temp2)),ABS(AVG(vl3)-AVG(temp3))
-                    FROM temp_day_union,week1,week2,week3 WHERE EXTRACT(WEEK FROM day) = {week} AND EXTRACT(YEAR FROM day) ={year}  AND rname_ = '{region}'
+                    FROM temp_day_union,week1,week2,week3 WHERE EXTRACT(WEEK FROM day) =
+                    {week} AND EXTRACT(YEAR FROM day) ={year}  AND rname_ = '{region}'
                     '''.format(**{'week': week, 'year': year, 'region': region})
                     #print sql
                     cur.execute(sql)
+
+
+
                     #print cur.statusmessage
         conn.commit()
 
@@ -104,16 +123,16 @@ def week_group():
 
 if __name__ == '__main__':
     global region_r, period_r_mth, period_r_week, period_r_year
-    region_r = list(get_waring_period().viewkeys())
-    period_r_mth = get_waring_period(interval='MONTH')
-    period_r_week = get_waring_period(interval='WEEK')
-    period_r_year = get_waring_period(interval='YEAR')
-
+    #region_r = list(get_waring_period().viewkeys())
+    #period_r_mth = get_waring_period(interval='MONTH')
+    #period_r_week = get_waring_period(interval='WEEK')
+    #period_r_year = get_waring_period(interval='YEAR')
+    d =  get_waring_period_r()
     #normalization()
     #print get_waring_period()
 
-    normalization()
-    week_group()
+    #normalization()
+    #week_group()
 
 #df = DataFrame({'Deep 0': colums[0], 'Deep 1': colums[1], 'Deep 2': colums[2], 'Deep 3': colums[3],'Deep 4': colums[4]})
 #df.to_csv('Tree.csv')
