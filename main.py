@@ -4,8 +4,8 @@ import sys
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4 import uic
-from psql import datebase_connect
-from forecast import sel_colm, load_data, get_colum_name
+from psql import datebase_connect, load_data, get_colum_name, sel_colm
+#from psql import sel_colm, load_data, get_colum_name
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -142,7 +142,7 @@ class MainWindow ( QMainWindow ):
     def prog(self):
         self.fake_log(self.ui.textEdit_4, text=u'Построение прогноза...')
         col_n = ['start_day', 'end_day', 'now', 'fname_', 'sname_', 'rname_', 'cl', 'pcl', 'abs(cl-pcl)']
-        horHeaders, data = load_data(table_name='week_union_norm', column_name=col_n, add_filter='pcl is not null', order='start_day LIMIT 300')
+        horHeaders, data = load_data(table_name='week_union_norm', column_name=col_n, add_filter='pcl is not null', order='pcl DESC LIMIT 300')
         self.add_to_table(data, self.transl(horHeaders), self.ui.tableWidget_3)
 
 

@@ -1,7 +1,8 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
-from forecast import sel_colm, load_data
+from forecast import sel_colm
+from psql import load_data, sel_colm
 
 
 def plot_graph():
@@ -19,8 +20,9 @@ def plot_graph():
     plt.grid()
     plt.show()
 
+
 def plot_graph2():
-    column_name, data = load_data(column_name=['cl', 'areasum_'], add_filter='now is not null ', order='areasum_')
+    column_name, data = load_data(column_name=['cl', 'pcl'], add_filter='now is not null ', order='areasum_')
     num_col = {a: i for i, a in enumerate(column_name)}
     sc = lambda b: sel_colm(data, [num_col[b]])
     d1 = sc('cl')
@@ -30,7 +32,6 @@ def plot_graph2():
     plt.show()
 
 
-
 if __name__ == '__main__':
-    plot_graph2()
+    plot_graph()
 

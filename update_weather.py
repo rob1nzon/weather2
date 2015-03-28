@@ -6,23 +6,10 @@ import gzip
 import re
 import csv
 from StringIO import StringIO
-
 import requests
 
+
 from psql import datebase_connect
-
-
-global f, db, cursor
-f, db, cursor = datebase_connect('localhost')
-
-
-def get_last_date_bd():
-    sql = '''SELECT data FROM agz_.weather
-        ORDER BY weather.data DESC
-        LIMIT 1'''
-    cursor.execute(sql)
-    results = cursor.fetchall()
-    return results[0][0]
 
 
 def expnda(base, wm):
@@ -30,98 +17,13 @@ def expnda(base, wm):
     head[0] = 'data'
     head[-2] = 'Ed'
     dt = csv.DictReader(base.splitlines(1)[7:], delimiter=';', fieldnames=head)
-    sql = '''INSERT INTO agz_.weather(wmid, {name})
+    sql = '''INSERT INTO agz_.new_weather(wmid, {name})
     VALUES ({wmid}, %({val})s)   '''.format(**{'name': ', '.join(head), 'wmid': wm, 'val': ')s, %('.join(head)})
-    #print sql
-    cursor.executemany(sql, dt)
-
-
-def expnda1(base, wm):
-    def plus(x, s):
-        if (s != ''):
-            if (srx[x] != 'NULL'):
-                if (srx[x] == 0):
-                    srx[x] += float(s)
-                else:
-                    if (float(s) != 0):
-                        srx[x] = round(((srx[x] + float(s)) / 2), 2)
-            else:
-                srx[x] = float(s)
-        else:
-            srx[x] = 'NULL'
-
-    global srx
-    srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # print base.splitlines(1)[6].split(';')[22]
-    dtch = base.splitlines(1)[7:][0].split(';')[0][1:-7]
-    #print dtch
-
-    for tline in base.splitlines(1)[7:]:
-        tarr = tline.split(';')
-        if (dtch != tarr[0][1:-7]):
-            #ToDo Оптимизировать запросы к базе данных
-            add_to_db(wm, dtch,
-                      srx[0], srx[1], srx[2], srx[3], srx[4],
-                      srx[5], srx[6], srx[7], srx[8], srx[9])
-            srx = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            dtch = tarr[0][1:-7]
-        try:
-            plus(0, tarr[1][1:-1])  # t температура
-        except:
-            print '1', tarr[1]
-        try:
-            plus(1, tarr[2][1:-1])  # pa атмосферное давление
-        except:
-            print '2', tarr[2]
-        try:
-            plus(2, tarr[3][1:-1])  # pa2 атмосферное давление на уровне моря
-        except:
-            print '3', tarr[3]
-        try:
-            plus(3, tarr[4][1:-1])  # pd разница давлений
-        except:
-            print '4', tarr[4]
-        try:
-            plus(4, tarr[5][1:-1])  # vl Относительная влажность
-        except:
-            print '5', tarr[5]
-        try:
-            plus(5, tarr[7][1:-1])  # ff  Скорость ветра
-        except:
-            print '7', tarr[7]
-        try:
-            plus(6, re.findall('(\d+)', tarr[10][1:-1])[0])  # n Облачность
-        except:
-            plus(6, '')
-        try:
-            plus(7, tarr[22][1:-1])  # Скорость ветра
-            #print '22', tarr[22]
-        except:
-            #print '22', tarr[22]
-            plus(7, '')
-        try:
-            srx[8] += re.findall('(\d+.\d+)', tarr[23][1:-1])[0]  # RRR Точка росы
-        except:
-            srx[8] += 0
-        try:
-            plus(9, tarr[26][1:-1])  # Tg температура поверхности
-        except:
-            plus(9, '')
-
-
-
-
-
-def add_to_db2(wm, date, temp, pa, pa2, pd, vl, ff, n, td, rrr, tg):
-    """
-    Заливаем погоду в БД
-    """
-    sql = """INSERT INTO agz_.weather(wmid, data, temp, pa, pa2, pd, vl, Ff, N, Td, RRR, Tg)
-        VALUES ('%(w)s', '%(d)s', %(t)s,%(p)s,%(p2)s,%(pd)s,%(vl)s,%(Ff)s,%(N)s,%(Td)s,%(RRR)s,%(Tg)s)
-        """ % {"w": wm, "d": date, "t": temp, "p": pa, "p2": pa2, "pd": pd, "vl": vl, "Ff": ff, "N": n, "Td": td,
-               "RRR": rrr, "Tg": tg}
-    cursor.execute(sql)
-
+    #print dt
+    try:
+        cursor.executemany(sql, dt)
+    except:
+        pass
 
 
 def load_data(wmid, gdate):
@@ -142,19 +44,17 @@ def load_data(wmid, gdate):
     d2 = str(now_date.day)
     y2 = str(now_date.year)
 
-    m1 = str(old_date.month)
-    d1 = str(old_date.day)
-    y1 = str(old_date.year)
-
-    dt1 = gdate[8:10] + '.' + gdate[5:7] + '.' + gdate[0:4]
-    dt2 = d1 + '.' + m1 + '.' + y1
-
+    dt1 = gdate[0].strftime('%Y.%m.%d')
+    print dt1
+    #dt2 = d1 + '.' + m1 + '.' + y1
+    dt2 = d2 + '.0' + m2 + '.' + y2
+    print dt1, dt2
     data = {
         'a_date1': dt1,
         'a_date2': dt2,
         'f_ed3': m2,
         'f_ed4': m2,
-        'f_ed5': '18',
+        'f_ed5': d2,
         'f_pe': '1',
         'f_pe1': '2',
         'lng_id': '2',
@@ -181,6 +81,7 @@ def load_data(wmid, gdate):
         a = s.find('http://')
         b = s.rfind('csv.gz') + 6
         surl = s[a:b]
+        print surl
         zname = surl[surl.rfind('/') + 1:b]
         request = urllib2.Request(surl)
         request.add_header('Accept-encoding', 'gzip')
@@ -193,44 +94,36 @@ def load_data(wmid, gdate):
         db.commit()
 
 
+def last_date_id(wmid):
+    sql = 'SELECT data FROM agz_.new_weather WHERE wmid = {wn} ORDER BY data DESC LIMIT 1'.format(**{'wn': wmid})
+    cursor.execute(sql)
+    return cursor.fetchone()
+
+
 def update_weather():
-    count = 1
+    global f, db, cursor
+    f, db, cursor = datebase_connect('localhost')
     now_date = datetime.date.today()
-    delta = datetime.timedelta(days=1)
-    old_date = now_date - delta
-    m1 = str(old_date.month)
-    if (len(m1) == 1): m1 = '0' + m1
-    d1 = str(old_date.day)
-    if (len(d1) == 1): d1 = '0' + d1
-    y1 = str(old_date.year)
-    old_d = y1 + '-' + m1 + '-' + d1
-    try:
-        date_bd = str(get_last_date_bd())
-    except:
-        print 'Записей в базе не обнаружено'
-        date_bd = raw_input('С какой даты скачать архив в формате: YYYY-MM-DD:')
-    # ToDo: переделать проверку
-    if (str(date_bd) != old_d):
-        date_bd = '2009-01-01'
-        sqlid = """SELECT DISTINCT ON (id) id
+    sqlid = """SELECT DISTINCT ON (id) id
                  FROM agz_.mstations
                  WHERE state LIKE 'Красноя%' """  # Только Ярославская область
-        cursor.execute(sqlid)
-        results = cursor.fetchall()
-        for row in results:
-            date_bd = str(get_last_date_bd())
+    cursor.execute(sqlid)
+    results = cursor.fetchall()
+    for row in results:
+        print row[0]
+        date_bd = last_date_id(row[0])
+        print date_bd
+        try:
             load_data(row[0], date_bd)
-
-
-
-    else:
-        print u'База данных актуальна...'
+        except:
+            pass
     db.commit()
     db.close()
 
 
 if __name__ == '__main__':
     update_weather()
+
 
 
 

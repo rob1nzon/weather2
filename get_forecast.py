@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 from bs4 import BeautifulSoup
-from psql import datebase_connect
+from psql import datebase_connect, load_data
 from datetime import datetime, timedelta, time
 import urllib2
 import re

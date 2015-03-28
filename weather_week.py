@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from psql import datebase_connect
 from week_union2 import get_region_list, get_strend_week
+import re
 ccc, conn, cur = datebase_connect('localhost')
 
 
@@ -39,12 +40,14 @@ def normalization():
 
     INSERT INTO agz_.week_union_norm(
     start_day, end_day, now, fname_, sname_, rname_, ngar, areasum_, center,
-            {w_c} delta, delta1, delta2, delta3 )
+            {w_c}, delta, delta1, delta2, delta3 )
 
     SELECT start_day, end_day, now, fname_, sname_, rname_, ngar, areasum_, center,'''.format(**{'w_c': ' ,'.join(col)})
-    for c in col:
-        sql += '('+c+'+ABS({'+c+'min}))/(ABS({'+c+'min})+{'+c+'max}) ,'
-    sql +=  ' ABS(vl-temp),ABS(vl1-temp1),ABS(vl2-temp2),ABS(vl3-temp3) FROM agz_.week_union;'
+    sql += ', '.join(col)
+    sql += ', ABS((vl-({vlmin}))/(abs({vlmax})-({vlmin})) - (temp-({tempmin}))/(abs({tempmax})-({tempmin}))),' \
+           ' ABS((vl1-({vl1min}))/(abs({vl1max})-({vl1min})) - (temp-({temp1min}))/(abs({temp1max})-({temp1min}))),' \
+           ' ABS((vl2-({vl2min}))/(abs({vl2max})-({vl2min})) - (temp-({temp2min}))/(abs({temp2max})-({temp2min}))),' \
+           ' ABS((vl3-({vl3min}))/(abs({vl3max})-({vl3min})) - (temp-({temp3min}))/(abs({temp3max})-({temp3min}))) FROM agz_.week_union;'
     return sql.format(**d)
 
 
@@ -53,7 +56,7 @@ def check_id(period, id):
     id3 = []
     for i in id2:
         sql = '''SELECT count(*)
-        FROM agz_.weather
+        FROM agz_.old_weather
         WHERE wmid={wmid} AND {not_null} is not Null
         AND data BETWEEN '{st}' AND '{ed}'
         '''.format(**{'wmid': i, 'not_null': ' is not Null AND '.join(['temp','pa','vl','ff','n']) ,'st': period[0], 'ed': period[1]})
@@ -67,16 +70,45 @@ def check_id(period, id):
     return id3
 
 
-def get_weather(period, id):
+def get_weather2(period, id):
     sql = '''
     SELECT AVG(temp), AVG(pa), AVG(vl), AVG(ff), AVG(n), AVG(td), AVG(rrr)
-    FROM agz_.weather
+    FROM agz_.old_weather
     WHERE (wmid={wmid} ) AND temp is not null
     AND data BETWEEN '{st}' AND '{ed}'
     '''.format(**{'wmid': ' OR wmid='.join(id), 'st': period[0], 'ed': period[1]})
-    #print(sql)
+    print(sql)
     cur.execute(sql)
     return cur.fetchone()
+
+
+def get_weather(period, id):
+    sql = '''
+    SELECT data, t, po, u,  ff, n, td, rrr
+    FROM agz_.new_weather
+    WHERE (wmid={wmid} )  AND data BETWEEN '{st}' AND '{ed}'
+    '''.format(**{'wmid': ' OR wmid='.join(id), 'st': period[0], 'ed': period[1]})
+    print(sql)
+    cur.execute(sql)
+    wh_data = cur.fetchall()
+    w = list([] for i in wh_data[0])
+
+    so = lambda d: float(re.findall('(\d+.\d+)', d)[0])
+    sd = lambda d: float(re.findall('(\d+)', d))
+
+    for wh in wh_data:
+        print wh
+        if wh[1]: w[0].append(float(wh[1]))
+        if wh[2]: w[1].append(float(wh[2]))
+        if wh[3]: w[2].append(float(wh[3]))
+        if wh[4]: w[3].append(float(wh[4]))
+        if wh[5]: w[4].append(sd(wh[5]))
+        if wh[6]: w[5].append(float(wh[6]))
+        if re.findall('(\d+.\d+)', wh[7]): w[6].append(so(wh[7])[0])
+
+
+    #print w
+    return
 
 
 def get_wmid_on_name(name):
@@ -183,5 +215,5 @@ def region_weather():
 
 
 if __name__ == '__main__':
-    #region_weather()
-    print normalization()
+    region_weather()
+    #print normalization()
