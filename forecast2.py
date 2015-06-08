@@ -1,6 +1,6 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
-from psql import datebase_connect, load_data, sel_colm
+from psql import datebase_connect, load_data, sel_colm, get_region_list
 from week_union2 import get_region_list
 
 def create_set():

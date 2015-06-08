@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pymssql
 
-conn = pymssql.connect('10.200.10.69', 'admin', 'admin', 'agz')
+conn = pymssql.connect('10.200.66.149', 'admin', '12345', 'agz')
 cursor = conn.cursor()
-cursor.execute('SELECT * FROM week_union')
+cursor.execute('SELECT * FROM week_union2')
 print cursor.fetchall()

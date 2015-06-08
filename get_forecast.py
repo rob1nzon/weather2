@@ -93,7 +93,7 @@ def get_weather_and_push(id):
 if __name__ == '__main__':
     global f, conn, cur, w
     f, conn, cur = datebase_connect('localhost')
-    cn, wmid_list = load_data(table_name='weather', column_name=['DISTINCT ON(wmid) wmid'], order='wmid', add_filter='wmid is not null')
+    cn, wmid_list = load_data(table_name='forecast_weather', column_name=['DISTINCT ON(wmid) wmid'], order='wmid', add_filter='wmid is not null')
     #wmid_list = [(23788,)]
     for wmid in wmid_list:
         print wmid[0]

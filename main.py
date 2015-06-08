@@ -64,7 +64,7 @@ class MainWindow ( QMainWindow ):
     def load_data(self):
         date = self.det_date_1()
         col_n = ['id_gar', 'tmin_', 'tmax_', 'area_/1000', 'fname_', 'sname_', 'rname_']
-        horHeaders, data = load_data(order_b=False, table_name='gar', column_name=col_n, add_filter='''(date_ >= '%s') AND (date_ <= '%s')''' % date, order='LIMIT 100')
+        horHeaders, data = load_data(order_b=False, table_name='gar', column_name=col_n, add_filter='''(date_ >= '2013-01-01') AND (date_ <= '2015-01-01') AND sname_ LIKE 'Ярослав%' ''', order='LIMIT 100')
         self.fake_log(self.ui.textEdit)
         self.add_to_table(data, self.transl(horHeaders), self.ui.tableWidget)
 
@@ -92,7 +92,7 @@ class MainWindow ( QMainWindow ):
 
     def load_weather(self):
         col_n = ['wmid', 'data', 't', 'p', 'u', 'ff', 'n', 'rrr']
-        horHeaders, data = load_data(table_name='weather', column_name=col_n, add_filter='''(data >= '2013-01-31') AND (data <= '2013-03-01')''', order='data LIMIT 300')
+        horHeaders, data = load_data(table_name='new_weather', column_name=col_n, add_filter='''(data >= '2013-01-31') AND (data <= '2013-03-01')''', order='data LIMIT 300')
         self.ui.tableWidget.clear()
 
         self.fake_log(self.ui.textEdit)
@@ -107,10 +107,10 @@ class MainWindow ( QMainWindow ):
         #self.ui.label.visible = False
         self.fake_log(self.ui.textEdit_2)
         col_n = ['start_day', 'end_day', 'now', 'fname_', 'sname_', 'rname_', 'cl', 'ngar', 'areasum_/1000']
-        w = ['temp', 'pa', 'vl', 'ff', 'n', 'td', 'rrr', 'temp1', 'pa1', 'vl1', 'ff1', 'n1', 'td1', 'rrr1', 'temp2', 'pa2', 'vl2', 'ff2', 'n2', 'td2', 'rrr2', 'temp3', 'pa3', 'vl3', 'ff3', 'n3', 'td3', 'rrr3']
+        w = ['t', 'tmax', 'taday', 'po', 'u', 'umin', 'ff', 'n', 'td', 'rrr', 't1', 'tmax1', 'taday1', 'po1', 'u1', 'umin1', 'ff1', 'n1', 'td1', 'rrr1', 't2', 'tmax2', 'taday2', 'po2', 'u2', 'umin2', 'ff2', 'n2', 'td2', 'rrr2', 't3', 'tmax3', 'taday3', 'po3', 'u3', 'umin3', 'ff3', 'n3', 'td3', 'rrr3']
         d = ['delta', 'delta1', 'delta2', 'delta3']
         w1 = ['to_char(' + str(j) + ", '0.99')" for j in w]
-        horHeaders, data = load_data(table_name='week_union_norm', column_name=col_n+w1+d, order='start_day LIMIT 300')
+        horHeaders, data = load_data(table_name='week_union_norm', column_name=col_n+w1+d, add_filter="sname_ LIKE 'Ярослав%'", order='start_day LIMIT 300')
         col_n[6] = 'cl1'
         horHeaders = self.transl(col_n+w+d)
         self.ui.tableWidget_2.columCount = len(horHeaders)
@@ -127,7 +127,23 @@ class MainWindow ( QMainWindow ):
             pass
 
     def make_tree(self):
-        region_r = [u'Абанский', u'Ачинский', u'Балахтинский', u'Березовский', u'Бирилюсский', u'Боготольский', u'Богучанский', u'Большемуртинский', u'Большеулуйский', u'Дзержинский', u'Емельяновский', u'Енисейский', u'Ермаковский', u'Идринский', u'Иланский', u'Ирбейский', u'Казачинский', u'Канский', u'Каратузский', u'Кежемский', u'Минусинский', u'Мотыгинский', u'Назаровский', u'Нижнеингашский', u'Новоселовский', u'Партизанский', u'Пировский', u'Рыбинский', u'Саянский', u'Северо-Енисейский', u'Сухобузимский', u'Таймырский', u'Тасеевский', u'Туруханский', u'Тюхтетский', u'Ужурский', u'Уярский', u'Шарыповский', u'Шушенский', u'Эвенкийский']
+        region_r = [u"Брейтовский",
+u"Первомайский",
+u"Некрасовский",
+u"Ярославский",
+u"Любимский",
+u"Рыбинский",
+u"Пошехонский",
+u"Большесельский",
+u"Угличский",
+u"Ростовский",
+u"Некоузский",
+u"Тутаевский",
+u"Гаврилов-Ямский",
+u"Переславль-Залесский",
+u"Переславский",
+u"Борисоглебский",
+u"Даниловский"]#[u'Абанский', u'Ачинский', u'Балахтинский', u'Березовский', u'Бирилюсский', u'Боготольский', u'Богучанский', u'Большемуртинский', u'Большеулуйский', u'Дзержинский', u'Емельяновский', u'Енисейский', u'Ермаковский', u'Идринский', u'Иланский', u'Ирбейский', u'Казачинский', u'Канский', u'Каратузский', u'Кежемский', u'Минусинский', u'Мотыгинский', u'Назаровский', u'Нижнеингашский', u'Новоселовский', u'Партизанский', u'Пировский', u'Рыбинский', u'Саянский', u'Северо-Енисейский', u'Сухобузимский', u'Таймырский', u'Тасеевский', u'Туруханский', u'Тюхтетский', u'Ужурский', u'Уярский', u'Шарыповский', u'Шушенский', u'Эвенкийский']
         self.ui.comboBox.addItems(region_r)
         self.fake_log(self.ui.textEdit_3, text=u'Построение деревьев...')
 
@@ -141,8 +157,8 @@ class MainWindow ( QMainWindow ):
 
     def prog(self):
         self.fake_log(self.ui.textEdit_4, text=u'Построение прогноза...')
-        col_n = ['start_day', 'end_day', 'now', 'fname_', 'sname_', 'rname_', 'cl', 'pcl', 'abs(cl-pcl)']
-        horHeaders, data = load_data(table_name='week_union_norm', column_name=col_n, add_filter='pcl is not null', order='pcl DESC LIMIT 300')
+        col_n = ['start_day', 'end_day', 'now', 'fname_', 'sname_', 'rname_', 'ngar', 'pcl', 'abs(ngar-pcl)']
+        horHeaders, data = load_data(table_name='week_union_norm', column_name=col_n, add_filter='pcl is not null', order='ngar DESC LIMIT 300')
         self.add_to_table(data, self.transl(horHeaders), self.ui.tableWidget_3)
 
 

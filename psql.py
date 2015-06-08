@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import psycopg2
+
+
+
 def datebase_connect(host):
     '''
     Возвращает объекты для доступа к базе
@@ -75,3 +78,12 @@ def sel_colm(mass, n):
             temp.append(a[i])
         l.append(temp)
     return l
+
+
+def get_region_list():
+    f, conn, cur = datebase_connect('localhost')
+    sql = '''
+    SELECT DISTINCT ON(rname_) rname_ FROM agz_.waring_week
+    '''
+    cur.execute(sql)
+    return [a[0] for a in cur.fetchall()]

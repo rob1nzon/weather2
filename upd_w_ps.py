@@ -11,7 +11,6 @@ from psql import datebase_connect
 
 
 def expnda(base, wm):
-    f, db, cursor = datebase_connect('localhost')
     #f1, db1, cursor1 = datebase_connect('localhost')
     head = csv.DictReader(base.splitlines(1)[6:7], delimiter=';').fieldnames
     head[0] = 'data'
@@ -49,7 +48,8 @@ def load_data(wmid, gdate):
     #dt2 = d1 + '.' + m1 + '.' + y1
     dt2 = now_date.strftime('%d.%m.%Y')
     print dt1, dt2, wmid
-    data = dict(a_date1=dt1, a_date2=dt2, f_ed3=m2, f_ed4=m2, f_ed5=d2, f_pe='1', f_pe1='2', lng_id='2', wmo_id=str(wmid))
+    data = dict(a_date1=dt1, a_date2=dt2, f_ed3=m2, f_ed4=m2, f_ed5=d2, f_pe='1', f_pe1='2', lng_id='2',
+                wmo_id=str(wmid))
     url = 'http://rp5.ru/inc/f_archive.php'
     logging.info(wmid)
     try:
@@ -67,11 +67,9 @@ def load_data(wmid, gdate):
                 scs = False
     else:
         s = r.text
-        a = s.find('<a href=')+ 8
+        a = s.find('http://')
         b = s.rfind('csv.gz') + 6
-        surl = "http://rp5.ru/"+s[a:b]
-        #print s
-        #print "OK"
+        surl = s[a:b]
         #print surl
         #zname = surl[surl.rfind('/') + 1:b]
         request = urllib2.Request(surl)
@@ -102,8 +100,8 @@ def update_weather():
     global f, db, cursor
     f, db, cursor = datebase_connect('localhost')
     #now_date = datetime.date.today()
-    sqlid = """SELECT DISTINCT ON(wmid) wmid
-    FROM agz_.new_weather;"""  # Только Ярославская область
+    sqlid = """SELECT id  FROM agz_.mstations
+    WHERE state = 'Ярославская область'"""  # Только Ярославская область
     cursor.execute(sqlid)
     results = cursor.fetchall()
     #results = [(20069,)]
@@ -114,10 +112,7 @@ def update_weather():
             print 'new'
             date_bd = (datetime.datetime(2008, 12, 1),)
         if datetime.datetime.now().date() != date_bd[0].date():
-            try:
-                load_data(row[0], date_bd)
-            except:
-                print 'fail'
+            load_data(row[0], date_bd)
         else:
             print 'Ok'
     db.close()
@@ -125,8 +120,3 @@ def update_weather():
 
 if __name__ == '__main__':
     update_weather()
-
-
-
-
-

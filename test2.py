@@ -1,38 +1,36 @@
 # -*- coding: utf-8 -*-
-from docx import Document
-from docx.shared import Inches
-from docx.enum.section import WD_ORIENT
+import cv2
+from numpy import *
+import psycopg2
 
-document = Document()
-section = document.sections[-1]
-section.orientation = WD_ORIENT.LANDSCAPE
+conn = psycopg2.connect("""dbname='postgis_21_sample'
+                                    user='postgres'
+                                    host='127.0.0.1'
+                                    password='root'""")
+cur = conn.cursor()
 
-p = document.add_paragraph(u'''РАСПИСАНИЕ ЗАНЯТИЙ
-лаборатории (информационного обеспечения населения и технологий информационной поддержки РСЧС) научно –
-исследовательского отдела (по проблемам гражданской обороны и чрезвычайных ситуаций) научно исследовательского центра с 1 декабря по 7 декабря 2014 г.
-''')
+def get_data():
+    cur.execute("""SELECT now, t, tmax, taday, po, u, umin, ff, n, td, rrr, t1, tmax1, taday1,
+       po1, u1, umin1, ff1, n1, td1, rrr1, t2, tmax2, taday2, po2, u2,
+       umin2, ff2, n2, td2, rrr2, t3, tmax3, taday3, po3, u3, umin3,
+       ff3, n3, td3, rrr3, delta, delta1, delta2, delta3
+  FROM agz_.week_union_norm WHERE ngar>0 LIMIT 100;""")
+    return cur.fetchall()
 
-TitleTable = [u'Дата, дни недели',	u'Подразделение, время проведения',
-            u'Предметы обучения', u'Номера тем, занятий, их содержание, отрабатываемые нормативы',
-            u'Место проведения', u'Кто проводит', u'Руководства, пособия и материальное обеспечение',
-            u'Отметка о проведении']
+def get_label():
+    cur.execute("""SELECT ngar FROM agz_.week_union_norm WHERE ngar>0 LIMIT 100;""")
+    return cur.fetchall()
 
+if __name__ == '__main__':
+    a = array(get_data(), dtype=float32)
+    b = array(get_label(), dtype=float32)
 
-table = document.add_table(rows=1, cols=len(TitleTable))
-table.style = 'TableGrid'
-hdr_cells = table.rows[0].cells
-for i, a in enumerate(TitleTable):
-    hdr_cells[i].text = a
+    tree = cv2.DTree()
+    print tree.train(a, 1, b)
+    print 'H'
+    c = empty((100, 2), dtype=float32)
+    d = zeros((100, 1), dtype=float32)
 
-#hdr_cells[0].text = 'Qty'
-#hdr_cells[1].text = 'Id'
-#hdr_cells[2].text = 'Desc'
-#row_cells = table.add_row(TitleTable)
+    for i in range(100):
+        print b[i], tree.predict(a[i])
 
-row_cells = table.add_row().cells
-row_cells[0].text = str('fef')
-row_cells[1].text = str('fef')
-row_cells[2].text = 'fef'
-row_cells = table.add_row().cells
-
-document.save('demo.docx')

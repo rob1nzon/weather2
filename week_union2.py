@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import logging
-from psql import datebase_connect
-import update_weather
+
+from psql import  datebase_connect,get_region_list
+
+#import update_weather
 import random
 from datetime import date, timedelta, datetime
 
-
 global region_r
-
 
 #region_r = ['Зейский', 'Магдагачинский', 'Сковородинский', 'Селемджинский', 'Мазановский',
 #'Архаринский', 'Тындинский', 'Свободненский', 'Бурейский', 'Серышевский',
@@ -31,6 +31,7 @@ region_r = ['Абанский', 'Архаринский', 'Ачинский', '�
 
 
 ccc, conn, cur = datebase_connect('localhost')
+
 
 
 def get_area(t, id):
@@ -273,18 +274,10 @@ def fix_null_id(g):
     return gid
 
 
-def get_region_list():
-    sql = '''
-    SELECT DISTINCT ON(rname_) rname_ FROM agz_.waring_week
-    '''
-    cur.execute(sql)
-    return [a[0] for a in cur.fetchall()]
-
-
 def get_strend_week(year, week):
     d = date(year, 1, 1)
     d = d - timedelta(d.weekday())
-    dlt = timedelta(days = (week-1)*7)
+    dlt = timedelta(days=(week - 1) * 7)
     return d + dlt, d + dlt + timedelta(days=6)
 
 
@@ -304,7 +297,6 @@ def expd_gar_list(list_of_gar, str, end, week):
         end_data = datetime.combine(end, datetime.min.time())
         k = classification(one_gar_data, start_data, end_data)
         fn, sn, rn, center = one_gar[3], one_gar[4], one_gar[5], one_gar[6]
-
         if k[0] == 1:
             area = get_area(k[1], one_gar[0])
         else:
@@ -328,12 +320,11 @@ def union_week(c = object):
     #logging.basicConfig(level=logging.NOTSET)
     #logging.getLogger('tipper')
 
-    now_date = date.today()
     region_r = get_region_list()
     for region in region_r:
         print region
         wap = get_waring_week(region)
-        year_list = [2009, 2010, 2011, 2012, 2013, 2014]
+        year_list = [2009, 2010, 2011, 2012, 2013, 2014, 2015]
         for y in year_list:
             for w in wap:
                 period = get_strend_week(y, w)
@@ -345,11 +336,6 @@ def union_week(c = object):
                     # Null week
                     fn, rn, sn = get_subname(region)
                     add_new_week(0, 0, sd, ed, w, fn, sn, rn, 0)
-
-
-
-
-
 
 
 if __name__ == '__main__':
